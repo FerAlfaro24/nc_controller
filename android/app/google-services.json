@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "119227194371",
+    "project_id": "nccontroller-78de1",
+    "storage_bucket": "nccontroller-78de1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:119227194371:android:629c2dcad57bdae1d7c236",
+        "android_client_info": {
+          "package_name": "com.naboocustoms.nccontroller"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCDNRLR-9F6dZLLQglWV_miHreLr-tHJiA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
