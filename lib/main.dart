@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:provider/provider.dart';
 import 'firebase_options.dart';
+import 'nucleo/tema/tema_app.dart';
+import 'servicios/auth_service.dart';
+import 'servicios/firebase_service.dart';
+import 'pantallas/login_screen.dart';
 
 void main() async {
   // Asegurar que Flutter esté inicializado
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // Inicializar Firebase
+    // Inicializar Firebase con configuración corregida
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print("Firebase inicializado correctamente");
+    print("✅ Firebase inicializado correctamente");
   } catch (e) {
-    print("Error inicializando Firebase: $e");
-    // Continuar sin Firebase por ahora
+    print("❌ Error inicializando Firebase: $e");
+    // Continuar sin Firebase por ahora para evitar que se crashee la app
   }
 
   runApp(const AplicacionPrincipal());
@@ -25,29 +30,56 @@ class AplicacionPrincipal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'NC Controller',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: const Color(0xFF0F0F0F),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF1A1A1A),
-          foregroundColor: Colors.white,
+    return MultiProvider(
+      providers: [
+        // Servicios de la aplicación
+        Provider<AuthService>(
+          create: (_) => AuthService(),
         ),
-        cardTheme: const CardThemeData(
-          color: Color(0xFF252525),
-          elevation: 8,
+        Provider<FirebaseService>(
+          create: (_) => FirebaseService(),
         ),
+      ],
+      child: MaterialApp(
+        title: 'NC Controller',
+        debugShowCheckedModeBanner: false,
+
+        // Usar el tema personalizado
+        theme: TemaApp.temaOscuro,
+
+        home: const PantallaPrueba(),
       ),
-      home: const PantallaPrueba(),
     );
   }
 }
 
-class PantallaPrueba extends StatelessWidget {
+class PantallaPrueba extends StatefulWidget {
   const PantallaPrueba({super.key});
+
+  @override
+  State<PantallaPrueba> createState() => _PantallaPruebaState();
+}
+
+class _PantallaPruebaState extends State<PantallaPrueba> {
+  bool _firebaseConectado = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _verificarConexionFirebase();
+  }
+
+  Future<void> _verificarConexionFirebase() async {
+    try {
+      final firebaseService = context.read<FirebaseService>();
+      final conectado = await firebaseService.verificarConexion();
+      setState(() {
+        _firebaseConectado = conectado;
+      });
+    } catch (e) {
+      print("Error verificando conexión Firebase: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,6 +133,40 @@ class PantallaPrueba extends StatelessWidget {
                   fontSize: 16,
                 ),
               ),
+              const SizedBox(height: 16),
+
+              // Estado de Firebase
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _firebaseConectado
+                      ? Colors.green.withOpacity(0.2)
+                      : Colors.red.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: _firebaseConectado ? Colors.green : Colors.red,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _firebaseConectado ? Icons.check_circle : Icons.error,
+                      color: _firebaseConectado ? Colors.green : Colors.red,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      _firebaseConectado
+                          ? 'Firebase: Conectado'
+                          : 'Firebase: Desconectado',
+                      style: TextStyle(
+                        color: _firebaseConectado ? Colors.green : Colors.red,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               const SizedBox(height: 32),
 
               // Tarjetas simples
@@ -134,27 +200,33 @@ class PantallaPrueba extends StatelessWidget {
                     child: ElevatedButton(
                       onPressed: () {
                         print("Botón CONECTAR presionado");
+                        _verificarConexionFirebase();
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('CONECTAR'),
+                      child: const Text('VERIFICAR FIREBASE'),
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () {
-                        print("Botón CANCELAR presionado");
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PantallaLogin(),
+                          ),
+                        );
                       },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.cyan,
                         side: const BorderSide(color: Colors.cyan),
                         padding: const EdgeInsets.symmetric(vertical: 16),
                       ),
-                      child: const Text('CANCELAR'),
+                      child: const Text('LOGIN'),
                     ),
                   ),
                 ],

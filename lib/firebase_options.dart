@@ -41,8 +41,8 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBYour_Web_API_Key_Here',
-    appId: '1:119227194371:web:your_web_app_id',
+    apiKey: 'AIzaSyCDNRLR-9F6dZLLQglWV_miHreLr-tHJiA',
+    appId: '1:119227194371:web:629c2dcad57bdae1d7c236',
     messagingSenderId: '119227194371',
     projectId: 'nccontroller-78de1',
     authDomain: 'nccontroller-78de1.firebaseapp.com',
@@ -77,8 +77,8 @@ class DefaultFirebaseOptions {
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBYour_Windows_API_Key_Here',
-    appId: '1:119227194371:web:your_windows_app_id',
+    apiKey: 'AIzaSyCDNRLR-9F6dZLLQglWV_miHreLr-tHJiA',
+    appId: '1:119227194371:web:629c2dcad57bdae1d7c236',
     messagingSenderId: '119227194371',
     projectId: 'nccontroller-78de1',
     authDomain: 'nccontroller-78de1.firebaseapp.com',

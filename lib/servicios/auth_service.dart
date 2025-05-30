@@ -31,8 +31,20 @@ class AuthService {
       Usuario? usuario = await obtenerDatosUsuario(userCredential.user!.uid);
 
       if (usuario == null) {
-        await cerrarSesion();
-        return ResultadoAuth.error('Usuario no encontrado en el sistema');
+        // Crear usuario básico si no existe en Firestore
+        usuario = Usuario(
+          id: userCredential.user!.uid,
+          email: userCredential.user!.email ?? email.trim(),
+          nombre: userCredential.user!.displayName ?? 'Usuario',
+          rol: 'cliente',
+          activo: true,
+          fechaCreacion: DateTime.now(),
+        );
+
+        await _firestore
+            .collection('usuarios')
+            .doc(userCredential.user!.uid)
+            .set(usuario.toFirestore());
       }
 
       if (!usuario.estaActivo) {
@@ -45,6 +57,45 @@ class AuthService {
       return ResultadoAuth.error(_manejarErrorAuth(e));
     } catch (e) {
       return ResultadoAuth.error('Error inesperado: $e');
+    }
+  }
+
+  /// Registrar nuevo usuario
+  Future<ResultadoAuth> registrarUsuario({
+    required String email,
+    required String password,
+    required String nombre,
+  }) async {
+    try {
+      // Crear usuario en Firebase Auth
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+
+      // Actualizar el nombre del usuario
+      await userCredential.user?.updateDisplayName(nombre);
+
+      // Crear documento en Firestore
+      Usuario nuevoUsuario = Usuario(
+        id: userCredential.user!.uid,
+        email: email.trim(),
+        nombre: nombre.trim(),
+        rol: 'cliente',
+        activo: true,
+        fechaCreacion: DateTime.now(),
+      );
+
+      await _firestore
+          .collection('usuarios')
+          .doc(userCredential.user!.uid)
+          .set(nuevoUsuario.toFirestore());
+
+      return ResultadoAuth.exitoso(nuevoUsuario);
+    } on FirebaseAuthException catch (e) {
+      return ResultadoAuth.error(_manejarErrorAuth(e));
+    } catch (e) {
+      return ResultadoAuth.error('Error creando usuario: $e');
     }
   }
 
@@ -95,6 +146,11 @@ class AuthService {
     String rol = 'cliente',
   }) async {
     try {
+      // Verificar que el usuario actual es admin
+      if (!await esAdmin()) {
+        return ResultadoAuth.error('No tienes permisos para crear usuarios');
+      }
+
       // Crear usuario en Firebase Auth
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email.trim(),
@@ -178,6 +234,17 @@ class AuthService {
     }
   }
 
+  /// Restablecer contraseña
+  Future<bool> restablecerPassword(String email) async {
+    try {
+      await _auth.sendPasswordResetEmail(email: email.trim());
+      return true;
+    } catch (e) {
+      print('Error enviando email de restablecimiento: $e');
+      return false;
+    }
+  }
+
   // ==================== UTILIDADES ====================
 
   /// Manejar errores de autenticación
@@ -196,11 +263,15 @@ class AuthService {
       case 'email-already-in-use':
         return 'El email ya está en uso';
       case 'weak-password':
-        return 'La contraseña es muy débil';
+        return 'La contraseña es muy débil (mínimo 6 caracteres)';
       case 'invalid-credential':
         return 'Credenciales inválidas';
+      case 'network-request-failed':
+        return 'Error de red. Verifica tu conexión a internet';
+      case 'operation-not-allowed':
+        return 'Operación no permitida';
       default:
-        return 'Error de autenticación: ${e.message}';
+        return 'Error de autenticación: ${e.message ?? 'Desconocido'}';
     }
   }
 
@@ -212,6 +283,19 @@ class AuthService {
   /// Validar contraseña
   static bool passwordValida(String password) {
     return password.length >= 6;
+  }
+
+  /// Verificar conexión con Firebase Auth
+  Future<bool> verificarConexion() async {
+    try {
+      // Intentar obtener el usuario actual
+      _auth.currentUser;
+      // Si llegamos aquí sin errores, Firebase está conectado
+      return true;
+    } catch (e) {
+      print('Error verificando conexión Firebase Auth: $e');
+      return false;
+    }
   }
 }
 
