@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../servicios/auth_service.dart';
 import '../nucleo/constantes/colores_app.dart';
 import 'home_screen.dart';
-import 'admin_screen.dart';
+import 'admin_screen.dart'; // Importación correcta
 
 class PantallaLogin extends StatefulWidget {
   const PantallaLogin({super.key});
@@ -60,7 +60,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
           if (mounted) {
             if (resultado.usuario!.esAdmin) {
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const PantallaAdmin()),
+                MaterialPageRoute(builder: (context) => const PantallaAdmin()), // Nombre correcto
               );
             } else {
               Navigator.of(context).pushReplacement(
