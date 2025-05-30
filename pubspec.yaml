@@ -12,21 +12,18 @@ dependencies:
     sdk: flutter
 
   # Firebase - VERSIONES ESTABLES Y COMPATIBLES (CORREGIDAS)
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.15.3
-  cloud_firestore: ^4.13.6
-  firebase_storage: ^11.5.6
+  firebase_core: ^2.32.0
+  firebase_auth: ^4.16.0
+  cloud_firestore: ^4.17.5
+  firebase_storage: ^11.6.5
 
-  # Manejo de estado
+  # Manejo de estado - VERSION FIJA PARA EVITAR PROBLEMAS
   provider: ^6.1.5
 
   # UI y animaciones
   google_fonts: ^6.2.1
   lottie: ^2.7.0
   shimmer: ^3.0.0
-
-  # Bluetooth (comentado temporalmente por problemas de compilación)
-  # flutter_bluetooth_serial: ^0.4.0
 
   # Integraciones externas
   url_launcher: ^6.3.1
@@ -50,9 +47,7 @@ flutter:
     - assets/iconos/
     - assets/animaciones/
 
-  # fonts:
-  #   - family: Orbitron
-  #     fonts:
-  #       - asset: assets/fuentes/Orbitron-Regular.ttf
-  #       - asset: assets/fuentes/Orbitron-Bold.ttf
-  #         weight: 700
+# IMPORTANTE: Configuración adicional para evitar errores de nested
+dependency_overrides:
+  # Forzar versión específica de nested para evitar conflictos
+  nested: ^1.0.0

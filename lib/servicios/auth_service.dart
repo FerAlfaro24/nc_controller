@@ -5,10 +5,33 @@ import '../modelos/usuario.dart';
 class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
-  AuthService._internal();
+
+  // AQUÍ VA EL CONSTRUCTOR CORREGIDO 👇
+  AuthService._internal() {
+    print("🔧 AuthService inicializado");
+    _inicializarServicio();
+  }
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // NUEVA VARIABLE PARA CONTROLAR INICIALIZACIÓN 👇
+  bool _inicializado = false;
+
+  // NUEVO MÉTODO PARA INICIALIZAR DE FORMA SEGURA 👇
+  void _inicializarServicio() {
+    if (!_inicializado) {
+      print("🔧 Configurando listeners de AuthService");
+      _inicializado = true;
+
+      // Configurar listeners aquí si es necesario
+      _auth.authStateChanges().listen((User? user) {
+        print("🔐 Estado de autenticación cambió: ${user?.email ?? 'Sin usuario'}");
+      }).onError((error) {
+        print("❌ Error en authStateChanges: $error");
+      });
+    }
+  }
 
   // Credenciales hardcodeadas
   static const String _adminUser = 'admin';
@@ -377,6 +400,7 @@ class AuthService {
     return password.length >= 4;
   }
 
+  // MÉTODO AGREGADO PARA VERIFICAR CONEXIÓN 👇
   Future<bool> verificarConexion() async {
     try {
       await _firestore.collection('test').limit(1).get();
