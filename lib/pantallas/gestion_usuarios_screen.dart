@@ -1,0 +1,677 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../servicios/auth_service.dart';
+import '../modelos/usuario.dart';
+import '../nucleo/constantes/colores_app.dart';
+
+class PantallaGestionUsuarios extends StatefulWidget {
+  const PantallaGestionUsuarios({super.key});
+
+  @override
+  State<PantallaGestionUsuarios> createState() => _PantallaGestionUsuariosState();
+}
+
+class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
+  final TextEditingController _busquedaController = TextEditingController();
+  String _terminoBusqueda = '';
+
+  @override
+  void dispose() {
+    _busquedaController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        title: const Text('GESTIÓN DE USUARIOS'),
+        backgroundColor: ColoresApp.superficieOscura,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_add, color: ColoresApp.cyanPrimario),
+            onPressed: () => _mostrarDialogoCrearUsuario(context),
+          ),
+        ],
+      ),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: ColoresApp.gradienteFondo,
+        ),
+        child: Column(
+          children: [
+            // Barra de búsqueda
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _busquedaController,
+                style: const TextStyle(color: ColoresApp.textoPrimario),
+                decoration: InputDecoration(
+                  hintText: 'Buscar usuarios...',
+                  hintStyle: const TextStyle(color: ColoresApp.textoApagado),
+                  prefixIcon: const Icon(Icons.search, color: ColoresApp.cyanPrimario),
+                  filled: true,
+                  fillColor: ColoresApp.tarjetaOscura,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _terminoBusqueda = value.toLowerCase();
+                  });
+                },
+              ),
+            ),
+
+            // Lista de usuarios
+            Expanded(
+              child: StreamBuilder<List<Usuario>>(
+                stream: context.read<AuthService>().obtenerTodosLosUsuarios(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: ColoresApp.cyanPrimario),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: ColoresApp.error,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error al cargar usuarios',
+                            style: TextStyle(
+                              color: ColoresApp.error,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${snapshot.error}',
+                            style: const TextStyle(color: ColoresApp.textoSecundario),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  final usuarios = snapshot.data ?? [];
+                  final usuariosFiltrados = usuarios.where((usuario) {
+                    if (_terminoBusqueda.isEmpty) return true;
+                    return usuario.nombre.toLowerCase().contains(_terminoBusqueda) ||
+                        usuario.email.toLowerCase().contains(_terminoBusqueda);
+                  }).toList();
+
+                  if (usuariosFiltrados.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.people_outline,
+                            size: 64,
+                            color: ColoresApp.textoApagado,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _terminoBusqueda.isEmpty
+                                ? 'No hay usuarios registrados'
+                                : 'No se encontraron usuarios',
+                            style: const TextStyle(
+                              color: ColoresApp.textoSecundario,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: usuariosFiltrados.length,
+                    itemBuilder: (context, index) {
+                      final usuario = usuariosFiltrados[index];
+                      return _construirTarjetaUsuario(context, usuario);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _mostrarDialogoCrearUsuario(context),
+        backgroundColor: ColoresApp.cyanPrimario,
+        child: const Icon(Icons.person_add, color: Colors.white),
+      ),
+    );
+  }
+
+  Widget _construirTarjetaUsuario(BuildContext context, Usuario usuario) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: ColoresApp.tarjetaOscura,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: usuario.estaActivo
+              ? ColoresApp.bordeGris
+              : ColoresApp.error.withOpacity(0.3),
+        ),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        leading: Container(
+          width: 50,
+          height: 50,
+          decoration: BoxDecoration(
+            color: usuario.esAdmin
+                ? ColoresApp.rojoAcento.withOpacity(0.1)
+                : ColoresApp.cyanPrimario.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(25),
+          ),
+          child: Icon(
+            usuario.esAdmin ? Icons.admin_panel_settings : Icons.person,
+            color: usuario.esAdmin ? ColoresApp.rojoAcento : ColoresApp.cyanPrimario,
+            size: 24,
+          ),
+        ),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                usuario.nombre,
+                style: const TextStyle(
+                  color: ColoresApp.textoPrimario,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis, // Añade esto para truncar texto largo
+              ),
+            ),
+            if (usuario.esAdmin)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: ColoresApp.rojoAcento.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'ADMIN',
+                  style: TextStyle(
+                    color: ColoresApp.rojoAcento,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Text(
+              usuario.email,
+              style: const TextStyle(
+                color: ColoresApp.textoSecundario,
+                fontSize: 14,
+              ),
+              overflow: TextOverflow.ellipsis, // Añade esto para truncar email largo
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: usuario.estaActivo ? ColoresApp.exito : ColoresApp.error,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  usuario.estaActivo ? 'Activo' : 'Inactivo',
+                  style: TextStyle(
+                    color: usuario.estaActivo ? ColoresApp.exito : ColoresApp.error,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const Spacer(),
+                Flexible( // Cambia a Flexible para que el texto se ajuste
+                  child: Text(
+                    'Creado: ${_formatearFecha(usuario.fechaCreacion)}',
+                    style: const TextStyle(
+                      color: ColoresApp.textoApagado,
+                      fontSize: 10,
+                    ),
+                    overflow: TextOverflow.ellipsis, // Añade esto para truncar fecha larga
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert, color: ColoresApp.textoSecundario),
+          color: ColoresApp.tarjetaOscura,
+          onSelected: (value) {
+            switch (value) {
+              case 'editar':
+                _mostrarDialogoEditarUsuario(context, usuario);
+                break;
+              case 'toggle_estado':
+                _cambiarEstadoUsuario(context, usuario);
+                break;
+              case 'eliminar':
+                _confirmarEliminarUsuario(context, usuario);
+                break;
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'editar',
+              child: Row(
+                children: [
+                  Icon(Icons.edit, color: ColoresApp.cyanPrimario, size: 20),
+                  SizedBox(width: 8),
+                  Text('Editar', style: TextStyle(color: ColoresApp.textoPrimario)),
+                ],
+              ),
+            ),
+            PopupMenuItem(
+              value: 'toggle_estado',
+              child: Row(
+                children: [
+                  Icon(
+                    usuario.estaActivo ? Icons.block : Icons.check_circle,
+                    color: usuario.estaActivo ? ColoresApp.advertencia : ColoresApp.exito,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    usuario.estaActivo ? 'Desactivar' : 'Activar',
+                    style: const TextStyle(color: ColoresApp.textoPrimario),
+                  ),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'eliminar',
+              child: Row(
+                children: [
+                  Icon(Icons.delete, color: ColoresApp.error, size: 20),
+                  SizedBox(width: 8),
+                  Text('Eliminar', style: TextStyle(color: ColoresApp.error)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatearFecha(DateTime fecha) {
+    return '${fecha.day}/${fecha.month}/${fecha.year}';
+  }
+
+  void _mostrarDialogoCrearUsuario(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => _DialogoUsuario(
+        titulo: 'Crear Usuario',
+        onGuardar: (email, nombre, password, rol) async {
+          final authService = context.read<AuthService>();
+          final resultado = await authService.crearUsuario(
+            email: email,
+            nombre: nombre,
+            password: password,
+            rol: rol,
+          );
+
+          if (context.mounted) {
+            if (resultado.exitoso) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Usuario creado exitosamente'),
+                  backgroundColor: ColoresApp.exito,
+                ),
+              );
+              Navigator.of(context).pop();
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(resultado.error ?? 'Error desconocido'),
+                  backgroundColor: ColoresApp.error,
+                ),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  void _mostrarDialogoEditarUsuario(BuildContext context, Usuario usuario) {
+    showDialog(
+      context: context,
+      builder: (context) => _DialogoUsuario(
+        titulo: 'Editar Usuario',
+        usuario: usuario,
+        onGuardar: (email, nombre, password, rol) async {
+          final authService = context.read<AuthService>();
+
+          final usuarioActualizado = usuario.copiarCon(
+            email: email,
+            nombre: nombre,
+            rol: rol,
+          );
+
+          final exito = await authService.actualizarUsuario(
+            usuario.id,
+            usuarioActualizado,
+          );
+
+          if (context.mounted) {
+            if (exito) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Usuario actualizado exitosamente'),
+                  backgroundColor: ColoresApp.exito,
+                ),
+              );
+              Navigator.of(context).pop();
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Error al actualizar usuario'),
+                  backgroundColor: ColoresApp.error,
+                ),
+              );
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  void _cambiarEstadoUsuario(BuildContext context, Usuario usuario) async {
+    final authService = context.read<AuthService>();
+    final exito = await authService.cambiarEstadoUsuario(
+      usuario.id,
+      !usuario.estaActivo,
+    );
+
+    if (context.mounted) {
+      if (exito) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              usuario.estaActivo
+                  ? 'Usuario desactivado'
+                  : 'Usuario activado',
+            ),
+            backgroundColor: ColoresApp.exito,
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al cambiar estado del usuario'),
+            backgroundColor: ColoresApp.error,
+          ),
+        );
+      }
+    }
+  }
+
+  void _confirmarEliminarUsuario(BuildContext context, Usuario usuario) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: const Text(
+          'Confirmar Eliminación',
+          style: TextStyle(color: ColoresApp.textoPrimario),
+        ),
+        content: Text(
+          '¿Estás seguro de que quieres eliminar al usuario "${usuario.nombre}"?\n\nEsta acción no se puede deshacer.',
+          style: const TextStyle(color: ColoresApp.textoSecundario),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancelar', style: TextStyle(color: ColoresApp.textoSecundario)),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+
+              final authService = context.read<AuthService>();
+              final exito = await authService.eliminarUsuario(usuario.id);
+
+              if (context.mounted) {
+                if (exito) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Usuario eliminado exitosamente'),
+                      backgroundColor: ColoresApp.exito,
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Error al eliminar usuario'),
+                      backgroundColor: ColoresApp.error,
+                    ),
+                  );
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ColoresApp.error,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DialogoUsuario extends StatefulWidget {
+  final String titulo;
+  final Usuario? usuario;
+  final Function(String email, String nombre, String password, String rol) onGuardar;
+
+  const _DialogoUsuario({
+    required this.titulo,
+    this.usuario,
+    required this.onGuardar,
+  });
+
+  @override
+  State<_DialogoUsuario> createState() => _DialogoUsuarioState();
+}
+
+class _DialogoUsuarioState extends State<_DialogoUsuario> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _nombreController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String _rolSeleccionado = 'cliente';
+  bool _mostrarPassword = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.usuario != null) {
+      _emailController.text = widget.usuario!.email;
+      _nombreController.text = widget.usuario!.nombre;
+      _rolSeleccionado = widget.usuario!.rol;
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _nombreController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final esEdicion = widget.usuario != null;
+
+    return AlertDialog(
+      backgroundColor: ColoresApp.tarjetaOscura,
+      title: Text(
+        widget.titulo,
+        style: const TextStyle(color: ColoresApp.textoPrimario),
+      ),
+      content: SingleChildScrollView(
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Campo Email
+              TextFormField(
+                controller: _emailController,
+                style: const TextStyle(color: ColoresApp.textoPrimario),
+                decoration: const InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: Icon(Icons.email, color: ColoresApp.cyanPrimario),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor ingresa un email';
+                  }
+                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                    return 'Ingresa un email válido';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Campo Nombre
+              TextFormField(
+                controller: _nombreController,
+                style: const TextStyle(color: ColoresApp.textoPrimario),
+                decoration: const InputDecoration(
+                  labelText: 'Nombre completo',
+                  prefixIcon: Icon(Icons.person, color: ColoresApp.cyanPrimario),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor ingresa un nombre';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
+
+              // Campo Contraseña (solo para crear)
+              if (!esEdicion) ...[
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: !_mostrarPassword,
+                  style: const TextStyle(color: ColoresApp.textoPrimario),
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+                    prefixIcon: const Icon(Icons.lock, color: ColoresApp.cyanPrimario),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _mostrarPassword ? Icons.visibility : Icons.visibility_off,
+                        color: ColoresApp.textoSecundario,
+                      ),
+                      onPressed: () => setState(() => _mostrarPassword = !_mostrarPassword),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Por favor ingresa una contraseña';
+                    }
+                    if (value.length < 6) {
+                      return 'La contraseña debe tener al menos 6 caracteres';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
+
+              // Selector de rol
+              DropdownButtonFormField<String>(
+                value: _rolSeleccionado,
+                style: const TextStyle(color: ColoresApp.textoPrimario),
+                decoration: const InputDecoration(
+                  labelText: 'Rol',
+                  prefixIcon: Icon(Icons.admin_panel_settings, color: ColoresApp.cyanPrimario),
+                ),
+                dropdownColor: ColoresApp.tarjetaOscura,
+                items: const [
+                  DropdownMenuItem(
+                    value: 'cliente',
+                    child: Text('Cliente'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'admin',
+                    child: Text('Administrador'),
+                  ),
+                ],
+                onChanged: (value) {
+                  setState(() => _rolSeleccionado = value ?? 'cliente');
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar', style: TextStyle(color: ColoresApp.textoSecundario)),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            if (_formKey.currentState!.validate()) {
+              widget.onGuardar(
+                _emailController.text.trim(),
+                _nombreController.text.trim(),
+                _passwordController.text,
+                _rolSeleccionado,
+              );
+            }
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: ColoresApp.cyanPrimario,
+            foregroundColor: Colors.white,
+          ),
+          child: Text(esEdicion ? 'Actualizar' : 'Crear'),
+        ),
+      ],
+    );
+  }
+}
