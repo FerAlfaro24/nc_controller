@@ -327,10 +327,14 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 _itemDrawer(
                   context,
                   Icons.settings,
-                  'CONFIGURACIÓN',
+                  'UTILIDADES',
                       () {
                     Navigator.pop(context);
-                    print("Navegando a configuración");
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PantallaUtilidadesAdmin(),
+                      ),
+                    );
                   },
                 ),
                 const Divider(color: Color(0xFF404040)),

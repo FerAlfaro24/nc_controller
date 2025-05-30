@@ -1,71 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../servicios/auth_service.dart';
-import '../modelos/usuario.dart';
+import '../servicios/database_initializer.dart';
 import '../nucleo/constantes/colores_app.dart';
 
-class PantallaGestionUsuarios extends StatefulWidget {
-  const PantallaGestionUsuarios({super.key});
+class PantallaUtilidadesAdmin extends StatefulWidget {
+  const PantallaUtilidadesAdmin({super.key});
 
   @override
-  State<PantallaGestionUsuarios> createState() => _PantallaGestionUsuariosState();
+  State<PantallaUtilidadesAdmin> createState() => _PantallaUtilidadesAdminState();
 }
 
-class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
-  final TextEditingController _busquedaController = TextEditingController();
-  String _terminoBusqueda = '';
-  List<Usuario> _usuarios = [];
+class _PantallaUtilidadesAdminState extends State<PantallaUtilidadesAdmin> {
   bool _cargando = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _cargarUsuarios();
-  }
-
-  @override
-  void dispose() {
-    _busquedaController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _cargarUsuarios() async {
-    setState(() => _cargando = true);
-    try {
-      final authService = context.read<AuthService>();
-      final usuarios = await authService.cargarUsuariosManuales();
-      setState(() {
-        _usuarios = usuarios;
-        _cargando = false;
-      });
-    } catch (e) {
-      setState(() => _cargando = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error cargando usuarios: $e'),
-            backgroundColor: ColoresApp.error,
-          ),
-        );
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: true,
       appBar: AppBar(
-        title: const Text('GESTIÓN DE USUARIOS'),
+        title: const Text('UTILIDADES ADMIN'),
         backgroundColor: ColoresApp.superficieOscura,
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: ColoresApp.cyanPrimario),
-            onPressed: _cargarUsuarios,
-          ),
-          IconButton(
-            icon: const Icon(Icons.person_add, color: ColoresApp.cyanPrimario),
-            onPressed: () => _mostrarDialogoCrearUsuario(context),
+            icon: const Icon(Icons.info, color: ColoresApp.cyanPrimario),
+            onPressed: () => _mostrarInformacionSistema(context),
           ),
         ],
       ),
@@ -73,335 +32,355 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         decoration: const BoxDecoration(
           gradient: ColoresApp.gradienteFondo,
         ),
-        child: Column(
-          children: [
-            // Barra de búsqueda
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: TextField(
-                controller: _busquedaController,
-                style: const TextStyle(color: ColoresApp.textoPrimario),
-                decoration: InputDecoration(
-                  hintText: 'Buscar usuarios...',
-                  hintStyle: const TextStyle(color: ColoresApp.textoApagado),
-                  prefixIcon: const Icon(Icons.search, color: ColoresApp.cyanPrimario),
-                  filled: true,
-                  fillColor: ColoresApp.tarjetaOscura,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header de peligro
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ColoresApp.rojoAcento.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: ColoresApp.rojoAcento.withOpacity(0.3)),
                 ),
-                onChanged: (value) {
-                  setState(() {
-                    _terminoBusqueda = value.toLowerCase();
-                  });
-                },
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.warning,
+                      color: ColoresApp.rojoAcento,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'ZONA DE PELIGRO',
+                            style: TextStyle(
+                              color: ColoresApp.rojoAcento,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Estas operaciones son irreversibles',
+                            style: TextStyle(
+                              color: ColoresApp.rojoAcento.withOpacity(0.8),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
 
-            // Lista de usuarios
-            Expanded(
-              child: _cargando
-                  ? const Center(
-                child: CircularProgressIndicator(color: ColoresApp.cyanPrimario),
-              )
-                  : _construirListaUsuarios(),
-            ),
-          ],
+              // Sección de Base de Datos
+              _seccionUtilidades(
+                'BASE DE DATOS',
+                [
+                  _tarjetaUtilidad(
+                    'Inicializar BD',
+                    'Crear datos de ejemplo',
+                    Icons.storage,
+                    ColoresApp.verdeAcento,
+                        () => _inicializarBaseDatos(),
+                  ),
+                  _tarjetaUtilidad(
+                    'Verificar Datos',
+                    'Revisar integridad',
+                    Icons.verified,
+                    ColoresApp.cyanPrimario,
+                        () => _verificarDatos(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Sección de Operaciones Peligrosas
+              _seccionUtilidades(
+                'OPERACIONES PELIGROSAS',
+                [
+                  _tarjetaUtilidad(
+                    'Limpiar BD',
+                    'Eliminar TODOS los datos',
+                    Icons.delete_forever,
+                    ColoresApp.rojoAcento,
+                        () => _confirmarLimpiarBaseDatos(),
+                  ),
+                  _tarjetaUtilidad(
+                    'Reset Completo',
+                    'Reiniciar sistema',
+                    Icons.refresh,
+                    ColoresApp.advertencia,
+                        () => _confirmarResetCompleto(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // Sección de Firebase Auth
+              _seccionUtilidades(
+                'FIREBASE AUTH',
+                [
+                  _tarjetaUtilidad(
+                    'Consola Firebase',
+                    'Gestionar usuarios Auth',
+                    Icons.open_in_new,
+                    ColoresApp.informacion,
+                        () => _abrirConsolaFirebase(),
+                  ),
+                  _tarjetaUtilidad(
+                    'Info Auth',
+                    'Ver limitaciones',
+                    Icons.help,
+                    ColoresApp.cyanPrimario,
+                        () => _mostrarInfoFirebaseAuth(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Estado del sistema
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ColoresApp.tarjetaOscura,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: ColoresApp.bordeGris),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'ESTADO DEL SISTEMA',
+                      style: TextStyle(
+                        color: ColoresApp.textoPrimario,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _itemEstado('Firebase Auth', true, 'Funcionando'),
+                    _itemEstado('Firestore', true, 'Conectado'),
+                    _itemEstado('Storage', true, 'Disponible'),
+                    _itemEstado('Autenticación', true, 'Admin logueado'),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _mostrarDialogoCrearUsuario(context),
-        backgroundColor: ColoresApp.cyanPrimario,
-        child: const Icon(Icons.person_add, color: Colors.white),
       ),
     );
   }
 
-  Widget _construirListaUsuarios() {
-    final usuariosFiltrados = _usuarios.where((usuario) {
-      if (_terminoBusqueda.isEmpty) return true;
-      return usuario.nombre.toLowerCase().contains(_terminoBusqueda) ||
-          usuario.email.toLowerCase().contains(_terminoBusqueda);
-    }).toList();
+  Widget _seccionUtilidades(String titulo, List<Widget> tarjetas) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          titulo,
+          style: const TextStyle(
+            color: ColoresApp.textoPrimario,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 12),
+        for (int i = 0; i < tarjetas.length; i += 2)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Row(
+              children: [
+                Expanded(child: tarjetas[i]),
+                const SizedBox(width: 12),
+                if (i + 1 < tarjetas.length)
+                  Expanded(child: tarjetas[i + 1])
+                else
+                  const Expanded(child: SizedBox()),
+              ],
+            ),
+          ),
+      ],
+    );
+  }
 
-    if (usuariosFiltrados.isEmpty) {
-      return Center(
+  Widget _tarjetaUtilidad(String titulo, String descripcion, IconData icono, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: _cargando ? null : onTap,
+      child: Container(
+        height: 100,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: ColoresApp.tarjetaOscura,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color.withOpacity(0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.people_outline,
-              size: 64,
-              color: ColoresApp.textoApagado,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icono,
+                size: 20,
+                color: color,
+              ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             Text(
-              _terminoBusqueda.isEmpty
-                  ? 'No hay usuarios registrados'
-                  : 'No se encontraron usuarios',
+              titulo,
               style: const TextStyle(
-                color: ColoresApp.textoSecundario,
-                fontSize: 18,
-                fontWeight: FontWeight.w500,
+                color: ColoresApp.textoPrimario,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _cargarUsuarios,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ColoresApp.cyanPrimario,
-              ),
-              child: const Text('Recargar'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: usuariosFiltrados.length,
-      itemBuilder: (context, index) {
-        final usuario = usuariosFiltrados[index];
-        return _construirTarjetaUsuario(context, usuario);
-      },
-    );
-  }
-
-  Widget _construirTarjetaUsuario(BuildContext context, Usuario usuario) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: ColoresApp.tarjetaOscura,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: usuario.estaActivo
-              ? ColoresApp.bordeGris
-              : ColoresApp.error.withOpacity(0.3),
-        ),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(16),
-        leading: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: usuario.esAdmin
-                ? ColoresApp.rojoAcento.withOpacity(0.1)
-                : ColoresApp.cyanPrimario.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(25),
-          ),
-          child: Icon(
-            usuario.esAdmin ? Icons.admin_panel_settings : Icons.person,
-            color: usuario.esAdmin ? ColoresApp.rojoAcento : ColoresApp.cyanPrimario,
-            size: 24,
-          ),
-        ),
-        title: Row(
-          children: [
+            const SizedBox(height: 2),
             Expanded(
               child: Text(
-                usuario.nombre,
+                descripcion,
                 style: const TextStyle(
-                  color: ColoresApp.textoPrimario,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+                  color: ColoresApp.textoSecundario,
+                  fontSize: 10,
                 ),
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            if (usuario.esAdmin)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: ColoresApp.rojoAcento.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Text(
-                  'ADMIN',
-                  style: TextStyle(
-                    color: ColoresApp.rojoAcento,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
           ],
         ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              usuario.email,
-              style: const TextStyle(
-                color: ColoresApp.textoSecundario,
-                fontSize: 14,
-              ),
-              overflow: TextOverflow.ellipsis,
+      ),
+    );
+  }
+
+  Widget _itemEstado(String titulo, bool activo, String descripcion) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: activo ? ColoresApp.exito : ColoresApp.error,
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 8),
-            Row(
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: usuario.estaActivo ? ColoresApp.exito : ColoresApp.error,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
                 Text(
-                  usuario.estaActivo ? 'Activo' : 'Inactivo',
-                  style: TextStyle(
-                    color: usuario.estaActivo ? ColoresApp.exito : ColoresApp.error,
-                    fontSize: 12,
+                  titulo,
+                  style: const TextStyle(
+                    color: ColoresApp.textoPrimario,
+                    fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const Spacer(),
-                Flexible(
-                  child: Text(
-                    'ID: ${usuario.id.substring(0, 8)}...',
-                    style: const TextStyle(
-                      color: ColoresApp.textoApagado,
-                      fontSize: 10,
-                    ),
-                    overflow: TextOverflow.ellipsis,
+                Text(
+                  descripcion,
+                  style: const TextStyle(
+                    color: ColoresApp.textoSecundario,
+                    fontSize: 12,
                   ),
                 ),
               ],
             ),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          icon: const Icon(Icons.more_vert, color: ColoresApp.textoSecundario),
-          color: ColoresApp.tarjetaOscura,
-          onSelected: (value) async {
-            switch (value) {
-              case 'toggle_estado':
-                await _cambiarEstadoUsuario(context, usuario);
-                break;
-              case 'eliminar':
-                await _confirmarEliminarUsuario(context, usuario);
-                break;
-            }
-          },
-          itemBuilder: (context) => [
-            PopupMenuItem(
-              value: 'toggle_estado',
-              child: Row(
-                children: [
-                  Icon(
-                    usuario.estaActivo ? Icons.block : Icons.check_circle,
-                    color: usuario.estaActivo ? ColoresApp.advertencia : ColoresApp.exito,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    usuario.estaActivo ? 'Desactivar' : 'Activar',
-                    style: const TextStyle(color: ColoresApp.textoPrimario),
-                  ),
-                ],
-              ),
-            ),
-            const PopupMenuItem(
-              value: 'eliminar',
-              child: Row(
-                children: [
-                  Icon(Icons.delete, color: ColoresApp.error, size: 20),
-                  SizedBox(width: 8),
-                  Text('Eliminar', style: TextStyle(color: ColoresApp.error)),
-                ],
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  void _mostrarDialogoCrearUsuario(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => _DialogoUsuario(
-        titulo: 'Crear Usuario',
-        onGuardar: (email, nombre, password, rol) async {
-          final authService = context.read<AuthService>();
-          final resultado = await authService.crearUsuario(
-            email: email,
-            nombre: nombre,
-            password: password,
-            rol: rol,
-          );
-
-          if (context.mounted) {
-            if (resultado.exitoso) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Usuario creado exitosamente'),
-                  backgroundColor: ColoresApp.exito,
-                ),
-              );
-              Navigator.of(context).pop();
-              await _cargarUsuarios();
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(resultado.error ?? 'Error desconocido'),
-                  backgroundColor: ColoresApp.error,
-                ),
-              );
-            }
-          }
-        },
-      ),
-    );
-  }
-
-  Future<void> _cambiarEstadoUsuario(BuildContext context, Usuario usuario) async {
-    final authService = context.read<AuthService>();
-    final exito = await authService.cambiarEstadoUsuario(
-      usuario.id,
-      !usuario.estaActivo,
-    );
-
-    if (context.mounted) {
-      if (exito) {
+  Future<void> _inicializarBaseDatos() async {
+    setState(() => _cargando = true);
+    try {
+      await DatabaseInitializer.inicializarBaseDatos();
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-                usuario.estaActivo ? 'Usuario desactivado' : 'Usuario activado'),
+          const SnackBar(
+            content: Text('✅ Base de datos inicializada correctamente'),
             backgroundColor: ColoresApp.exito,
           ),
         );
-        await _cargarUsuarios();
-      } else {
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error al cambiar estado del usuario'),
+          SnackBar(
+            content: Text('❌ Error inicializando BD: $e'),
             backgroundColor: ColoresApp.error,
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _cargando = false);
     }
   }
 
-  Future<void> _confirmarEliminarUsuario(BuildContext context, Usuario usuario) async {
+  Future<void> _verificarDatos() async {
+    setState(() => _cargando = true);
+    try {
+      await DatabaseInitializer.verificarYRepararDatos();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Verificación completada'),
+            backgroundColor: ColoresApp.exito,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error en verificación: $e'),
+            backgroundColor: ColoresApp.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _cargando = false);
+    }
+  }
+
+  Future<void> _confirmarLimpiarBaseDatos() async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ColoresApp.tarjetaOscura,
         title: const Text(
-          'Confirmar Eliminación',
-          style: TextStyle(color: ColoresApp.textoPrimario),
+          '⚠️ ELIMINAR TODOS LOS DATOS',
+          style: TextStyle(color: ColoresApp.rojoAcento),
         ),
-        content: Text(
-          '¿Estás seguro de que quieres eliminar al usuario "${usuario.nombre}"?\n\nEsta acción no se puede deshacer.',
-          style: const TextStyle(color: ColoresApp.textoSecundario),
+        content: const Text(
+          'Esta acción eliminará TODOS los usuarios, figuras y configuraciones.\n\n¿Estás completamente seguro?\n\nEsta acción NO se puede deshacer.',
+          style: TextStyle(color: ColoresApp.textoPrimario),
         ),
         actions: [
           TextButton(
@@ -411,215 +390,255 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: ColoresApp.error,
+              backgroundColor: ColoresApp.rojoAcento,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Eliminar'),
+            child: const Text('SÍ, ELIMINAR TODO'),
           ),
         ],
       ),
     );
 
     if (confirmar == true) {
-      final authService = context.read<AuthService>();
-      final exito = await authService.eliminarUsuario(usuario.id);
-
-      if (context.mounted) {
-        if (exito) {
+      setState(() => _cargando = true);
+      try {
+        final authService = context.read<AuthService>();
+        await authService.limpiarBaseDatos();
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Usuario eliminado exitosamente'),
+              content: Text('✅ Base de datos limpiada completamente'),
               backgroundColor: ColoresApp.exito,
             ),
           );
-          await _cargarUsuarios();
-        } else {
+        }
+      } catch (e) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Error al eliminar usuario'),
+            SnackBar(
+              content: Text('❌ Error limpiando BD: $e'),
               backgroundColor: ColoresApp.error,
             ),
           );
         }
+      } finally {
+        if (mounted) setState(() => _cargando = false);
       }
     }
   }
-}
 
-class _DialogoUsuario extends StatefulWidget {
-  final String titulo;
-  final Usuario? usuario;
-  final Function(String email, String nombre, String password, String rol) onGuardar;
+  Future<void> _confirmarResetCompleto() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: const Text(
+          '🔄 RESET COMPLETO DEL SISTEMA',
+          style: TextStyle(color: ColoresApp.advertencia),
+        ),
+        content: const Text(
+          'Esto eliminará todo y recreará la base de datos con datos de ejemplo.\n\n¿Continuar?',
+          style: TextStyle(color: ColoresApp.textoPrimario),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: ColoresApp.textoSecundario)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ColoresApp.advertencia,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('RESET COMPLETO'),
+          ),
+        ],
+      ),
+    );
 
-  const _DialogoUsuario({
-    required this.titulo,
-    this.usuario,
-    required this.onGuardar,
-  });
-
-  @override
-  State<_DialogoUsuario> createState() => _DialogoUsuarioState();
-}
-
-class _DialogoUsuarioState extends State<_DialogoUsuario> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _nombreController = TextEditingController();
-  final _passwordController = TextEditingController();
-  String _rolSeleccionado = 'cliente';
-  bool _mostrarPassword = false;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.usuario != null) {
-      _emailController.text = widget.usuario!.email;
-      _nombreController.text = widget.usuario!.nombre;
-      _rolSeleccionado = widget.usuario!.rol;
+    if (confirmar == true) {
+      setState(() => _cargando = true);
+      try {
+        final authService = context.read<AuthService>();
+        await authService.limpiarBaseDatos();
+        await DatabaseInitializer.inicializarBaseDatos();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('✅ Sistema reseteado y reinicializado'),
+              backgroundColor: ColoresApp.exito,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('❌ Error en reset: $e'),
+              backgroundColor: ColoresApp.error,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _cargando = false);
+      }
     }
   }
 
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _nombreController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final esEdicion = widget.usuario != null;
-
-    return AlertDialog(
-      backgroundColor: ColoresApp.tarjetaOscura,
-      title: Text(
-        widget.titulo,
-        style: const TextStyle(color: ColoresApp.textoPrimario),
-      ),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
+  void _abrirConsolaFirebase() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: const Text(
+          '🔥 CONSOLA DE FIREBASE',
+          style: TextStyle(color: ColoresApp.informacion),
+        ),
+        content: const SingleChildScrollView(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Campo Email
-              TextFormField(
-                controller: _emailController,
-                style: const TextStyle(color: ColoresApp.textoPrimario),
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email, color: ColoresApp.cyanPrimario),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingresa un email';
-                  }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return 'Ingresa un email válido';
-                  }
-                  return null;
-                },
+              Text(
+                'Para eliminar usuarios de Firebase Auth, ve a:',
+                style: TextStyle(color: ColoresApp.textoPrimario),
               ),
-              const SizedBox(height: 16),
-
-              // Campo Nombre
-              TextFormField(
-                controller: _nombreController,
-                style: const TextStyle(color: ColoresApp.textoPrimario),
-                decoration: const InputDecoration(
-                  labelText: 'Nombre completo',
-                  prefixIcon: Icon(Icons.person, color: ColoresApp.cyanPrimario),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Por favor ingresa un nombre';
-                  }
-                  return null;
-                },
+              SizedBox(height: 12),
+              Text(
+                '1. Abre la consola de Firebase',
+                style: TextStyle(color: ColoresApp.textoSecundario),
               ),
-              const SizedBox(height: 16),
-
-              // Campo Contraseña (solo para crear)
-              if (!esEdicion) ...[
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: !_mostrarPassword,
-                  style: const TextStyle(color: ColoresApp.textoPrimario),
-                  decoration: InputDecoration(
-                    labelText: 'Contraseña',
-                    prefixIcon: const Icon(Icons.lock, color: ColoresApp.cyanPrimario),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _mostrarPassword ? Icons.visibility : Icons.visibility_off,
-                        color: ColoresApp.textoSecundario,
-                      ),
-                      onPressed: () => setState(() => _mostrarPassword = !_mostrarPassword),
-                    ),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingresa una contraseña';
-                    }
-                    if (value.length < 6) {
-                      return 'La contraseña debe tener al menos 6 caracteres';
-                    }
-                    return null;
-                  },
+              SizedBox(height: 8),
+              Text(
+                '2. Proyecto → Authentication → Users',
+                style: TextStyle(color: ColoresApp.textoSecundario),
+              ),
+              SizedBox(height: 8),
+              Text(
+                '3. Elimina usuarios manualmente',
+                style: TextStyle(color: ColoresApp.textoSecundario),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'URL: console.firebase.google.com',
+                style: TextStyle(
+                  color: ColoresApp.cyanPrimario,
+                  fontFamily: 'monospace',
                 ),
-                const SizedBox(height: 16),
-              ],
-
-              // Selector de rol
-              DropdownButtonFormField<String>(
-                value: _rolSeleccionado,
-                style: const TextStyle(color: ColoresApp.textoPrimario),
-                decoration: const InputDecoration(
-                  labelText: 'Rol',
-                  prefixIcon: Icon(Icons.admin_panel_settings, color: ColoresApp.cyanPrimario),
-                ),
-                dropdownColor: ColoresApp.tarjetaOscura,
-                items: const [
-                  DropdownMenuItem(
-                    value: 'cliente',
-                    child: Text('Cliente'),
-                  ),
-                  DropdownMenuItem(
-                    value: 'admin',
-                    child: Text('Administrador'),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() => _rolSeleccionado = value ?? 'cliente');
-                },
               ),
             ],
           ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar', style: TextStyle(color: ColoresApp.textoSecundario)),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            if (_formKey.currentState!.validate()) {
-              widget.onGuardar(
-                _emailController.text.trim(),
-                _nombreController.text.trim(),
-                _passwordController.text,
-                _rolSeleccionado,
-              );
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: ColoresApp.cyanPrimario,
-            foregroundColor: Colors.white,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Entendido', style: TextStyle(color: ColoresApp.cyanPrimario)),
           ),
-          child: Text(esEdicion ? 'Actualizar' : 'Crear'),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarInfoFirebaseAuth() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: const Text(
+          'ℹ️ LIMITACIONES DE FIREBASE AUTH',
+          style: TextStyle(color: ColoresApp.advertencia),
         ),
-      ],
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '⚠️ Problema Identificado:',
+                style: TextStyle(
+                  color: ColoresApp.rojoAcento,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Firebase Auth mantiene usuarios aunque limpiemos Firestore. Esto causa el error "email already in use".',
+                style: TextStyle(color: ColoresApp.textoPrimario),
+              ),
+              SizedBox(height: 16),
+              Text(
+                '✅ Soluciones:',
+                style: TextStyle(
+                  color: ColoresApp.verdeAcento,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                '1. Usar emails únicos para cada prueba',
+                style: TextStyle(color: ColoresApp.textoSecundario),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '2. Eliminar usuarios desde la consola',
+                style: TextStyle(color: ColoresApp.textoSecundario),
+              ),
+              SizedBox(height: 4),
+              Text(
+                '3. Usar diferentes proyectos para desarrollo',
+                style: TextStyle(color: ColoresApp.textoSecundario),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Entendido', style: TextStyle(color: ColoresApp.cyanPrimario)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarInformacionSistema(BuildContext context) { // Added context parameter
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: const Text(
+          'INFORMACIÓN DEL SISTEMA',
+          style: TextStyle(color: ColoresApp.textoPrimario),
+        ),
+        content: const SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('🔧 Versión: 1.0.0', style: TextStyle(color: ColoresApp.textoSecundario)),
+              SizedBox(height: 8),
+              Text('🔥 Firebase: Conectado', style: TextStyle(color: ColoresApp.textoSecundario)),
+              SizedBox(height: 8),
+              Text('👤 Rol: Administrador', style: TextStyle(color: ColoresApp.textoSecundario)),
+              SizedBox(height: 8),
+              Text('📱 Plataforma: Flutter', style: TextStyle(color: ColoresApp.textoSecundario)),
+              SizedBox(height: 16),
+              Text(
+                'Naboo Customs Controller\nSistema de control para figuras futuristas',
+                style: TextStyle(color: ColoresApp.textoApagado, fontSize: 12),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cerrar', style: TextStyle(color: ColoresApp.cyanPrimario)),
+          ),
+        ],
+      ),
     );
   }
 }

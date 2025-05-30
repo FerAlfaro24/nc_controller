@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../servicios/auth_service.dart';
 import '../nucleo/constantes/colores_app.dart';
 import 'home_screen.dart';
-import 'admin_screen.dart'; // Importación correcta
+import 'admin_screen.dart';
 
 class PantallaLogin extends StatefulWidget {
   const PantallaLogin({super.key});
@@ -14,14 +14,14 @@ class PantallaLogin extends StatefulWidget {
 
 class _PantallaLoginState extends State<PantallaLogin> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usuarioController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _cargando = false;
   bool _mostrarPassword = false;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usuarioController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
@@ -34,10 +34,10 @@ class _PantallaLoginState extends State<PantallaLogin> {
     try {
       final authService = context.read<AuthService>();
 
-      print('Intentando login con: ${_emailController.text} / ${_passwordController.text}');
+      print('Intentando login con: ${_usuarioController.text} / ${_passwordController.text}');
 
       ResultadoAuth resultado = await authService.iniciarSesion(
-        _emailController.text,
+        _usuarioController.text,
         _passwordController.text,
       );
 
@@ -60,7 +60,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
           if (mounted) {
             if (resultado.usuario!.esAdmin) {
               Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const PantallaAdmin()), // Nombre correcto
+                MaterialPageRoute(builder: (context) => const PantallaAdmin()),
               );
             } else {
               Navigator.of(context).pushReplacement(
@@ -93,12 +93,12 @@ class _PantallaLoginState extends State<PantallaLogin> {
   }
 
   void _autocompletarAdmin() {
-    _emailController.text = 'admin';
+    _usuarioController.text = 'admin';
     _passwordController.text = '1234';
   }
 
   void _autocompletarUsuario() {
-    _emailController.text = 'usuario';
+    _usuarioController.text = 'usuario';
     _passwordController.text = '1234';
   }
 
@@ -170,11 +170,11 @@ class _PantallaLoginState extends State<PantallaLogin> {
                               border: Border.all(color: ColoresApp.bordeGris),
                             ),
                             child: TextFormField(
-                              controller: _emailController,
+                              controller: _usuarioController,
                               style: const TextStyle(color: ColoresApp.textoPrimario),
                               decoration: const InputDecoration(
                                 labelText: 'Usuario',
-                                hintText: 'admin o usuario',
+                                hintText: 'admin, usuario, juan123',
                                 prefixIcon: Icon(Icons.person, color: ColoresApp.cyanPrimario),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsets.all(16),
@@ -182,6 +182,9 @@ class _PantallaLoginState extends State<PantallaLogin> {
                               validator: (value) {
                                 if (value == null || value.isEmpty) {
                                   return 'Por favor ingresa tu usuario';
+                                }
+                                if (value.length < 3) {
+                                  return 'El usuario debe tener al menos 3 caracteres';
                                 }
                                 return null;
                               },
@@ -304,7 +307,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Credenciales de Prueba',
+                                  'Usuarios de Prueba',
                                   style: TextStyle(
                                     color: ColoresApp.informacion,
                                     fontWeight: FontWeight.w600,

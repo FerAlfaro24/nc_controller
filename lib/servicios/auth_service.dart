@@ -11,9 +11,9 @@ class AuthService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Credenciales hardcodeadas
-  static const String _adminEmail = 'admin';
+  static const String _adminUser = 'admin';
   static const String _adminPassword = '1234';
-  static const String _userEmail = 'usuario';
+  static const String _userUser = 'usuario';
   static const String _userPassword = '1234';
 
   // Stream del usuario actual
@@ -24,27 +24,27 @@ class AuthService {
 
   // ==================== AUTENTICACIÓN ====================
 
-  /// Iniciar sesión
-  Future<ResultadoAuth> iniciarSesion(String email, String password) async {
+  /// Iniciar sesión con usuario y contraseña (sin email)
+  Future<ResultadoAuth> iniciarSesion(String usuario, String password) async {
     try {
-      String emailLimpio = email.trim().toLowerCase();
+      String usuarioLimpio = usuario.trim().toLowerCase();
 
-      print('🔐 Iniciando sesión para: $emailLimpio');
+      print('🔐 Iniciando sesión para: $usuarioLimpio');
 
       // Verificar credenciales hardcodeadas PRIMERO
-      if (emailLimpio == _adminEmail && password == _adminPassword) {
+      if (usuarioLimpio == _adminUser && password == _adminPassword) {
         print('✅ Login hardcodeado: Admin');
         return await _crearSesionLocal('admin', 'Administrador', 'admin');
       }
 
-      if (emailLimpio == _userEmail && password == _userPassword) {
+      if (usuarioLimpio == _userUser && password == _userPassword) {
         print('✅ Login hardcodeado: Usuario');
-        return await _crearSesionLocal('usuario', 'Usuario', 'cliente');
+        return await _crearSesionLocal('usuario', 'Usuario Normal', 'cliente');
       }
 
-      // Si no son credenciales hardcodeadas, intentar con Firebase
-      print('🔥 Intentando login con Firebase...');
-      return await _loginFirebaseBasico(email, password);
+      // Si no son credenciales hardcodeadas, buscar en Firestore
+      print('🔍 Buscando usuario en base de datos...');
+      return await _loginFirestore(usuarioLimpio, password);
 
     } catch (e) {
       print('❌ Error inesperado en iniciarSesion: $e');
@@ -52,56 +52,68 @@ class AuthService {
     }
   }
 
-  /// Login básico sin tocar Firestore hasta después del login
-  Future<ResultadoAuth> _loginFirebaseBasico(String email, String password) async {
+  /// Login buscando en Firestore directamente
+  Future<ResultadoAuth> _loginFirestore(String usuario, String password) async {
     try {
-      print('🔐 Login Firebase básico: $email');
+      print('🔍 Buscando usuario en Firestore: $usuario');
 
-      // 1. Solo hacer login en Firebase Auth
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
+      // Buscar usuario por nombre de usuario en Firestore
+      QuerySnapshot query = await _firestore
+          .collection('usuarios')
+          .where('usuario', isEqualTo: usuario)
+          .where('activo', isEqualTo: true)
+          .limit(1)
+          .get();
+
+      if (query.docs.isEmpty) {
+        return ResultadoAuth.error('Usuario no encontrado');
+      }
+
+      DocumentSnapshot doc = query.docs.first;
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+      // Verificar contraseña (en un sistema real sería hasheada)
+      String passwordGuardada = data['password'] ?? '';
+      if (passwordGuardada != password) {
+        return ResultadoAuth.error('Contraseña incorrecta');
+      }
+
+      // Crear sesión de Firebase Auth temporal
+      String emailTemporal = '${usuario}@naboocustoms.local';
+      await _crearSesionFirebaseAuth(emailTemporal, password);
+
+      // Crear objeto usuario
+      Usuario usuarioObj = Usuario(
+        id: doc.id,
+        email: emailTemporal, // Email temporal para Firebase
+        nombre: data['nombre'] ?? usuario,
+        rol: data['rol'] ?? 'cliente',
+        activo: data['activo'] ?? true,
+        fechaCreacion: _parsearFecha(data['fechaCreacion']),
       );
 
-      String uid = userCredential.user!.uid;
-      String userEmail = userCredential.user!.email ?? email.trim();
-      String displayName = userCredential.user!.displayName ?? email.split('@')[0];
+      print('✅ Login exitoso para: ${usuarioObj.nombre}');
+      return ResultadoAuth.exitoso(usuarioObj);
 
-      print('✅ Login exitoso en Firebase Auth, UID: $uid');
-
-      // 2. Crear usuario simple SIN consultar Firestore
-      Usuario usuario = Usuario(
-        id: uid,
-        email: userEmail,
-        nombre: displayName,
-        rol: 'cliente',
-        activo: true,
-        fechaCreacion: DateTime.now(),
-      );
-
-      // 3. Guardar en Firestore de forma asíncrona (sin esperar)
-      _guardarUsuarioAsync(uid, usuario);
-
-      print('✅ Login completo exitoso para: ${usuario.nombre}');
-      return ResultadoAuth.exitoso(usuario);
-
-    } on FirebaseAuthException catch (e) {
-      print('❌ Error Firebase Auth: ${e.code} - ${e.message}');
-      return ResultadoAuth.error(_manejarErrorAuth(e));
     } catch (e) {
-      print('❌ Error inesperado en login básico: $e');
-      return ResultadoAuth.error('Error de conexión. Verifica tu internet.');
+      print('❌ Error en login Firestore: $e');
+      return ResultadoAuth.error('Error de autenticación: $e');
     }
   }
 
-  /// Guardar usuario en Firestore de forma asíncrona
-  void _guardarUsuarioAsync(String uid, Usuario usuario) {
-    _firestore
-        .collection('usuarios')
-        .doc(uid)
-        .set(usuario.toFirestore(), SetOptions(merge: true))
-        .then((_) => print('✅ Usuario guardado en Firestore async'))
-        .catchError((e) => print('⚠️ Error guardando en Firestore async: $e'));
+  /// Crear sesión en Firebase Auth de forma temporal
+  Future<void> _crearSesionFirebaseAuth(String email, String password) async {
+    try {
+      // Intentar login primero
+      await _auth.signInWithEmailAndPassword(email: email, password: '123456');
+    } catch (e) {
+      // Si no existe, crear usuario temporal
+      try {
+        await _auth.createUserWithEmailAndPassword(email: email, password: '123456');
+      } catch (createError) {
+        print('⚠️ Error creando sesión temporal: $createError');
+      }
+    }
   }
 
   /// Crear sesión local para usuarios hardcodeados
@@ -111,28 +123,7 @@ class AuthService {
 
       // Crear email temporal para Firebase
       String tempEmail = '$id@naboocustoms.local';
-
-      // Intentar login o crear usuario en Firebase
-      UserCredential? userCredential;
-
-      try {
-        userCredential = await _auth.signInWithEmailAndPassword(
-          email: tempEmail,
-          password: '123456', // Password temporal
-        );
-        print('✅ Login existente en Firebase para usuario local: $id');
-      } catch (e) {
-        // Si no existe, crear el usuario
-        try {
-          userCredential = await _auth.createUserWithEmailAndPassword(
-            email: tempEmail,
-            password: '123456',
-          );
-          print('✅ Usuario local creado en Firebase: $id');
-        } catch (createError) {
-          print('⚠️ Error creando usuario local en Firebase: $createError');
-        }
-      }
+      await _crearSesionFirebaseAuth(tempEmail, '123456');
 
       // Crear objeto usuario local
       Usuario usuario = Usuario(
@@ -143,11 +134,6 @@ class AuthService {
         activo: true,
         fechaCreacion: DateTime.now(),
       );
-
-      // Guardar en Firestore si tenemos userCredential
-      if (userCredential?.user != null) {
-        _guardarUsuarioAsync(userCredential!.user!.uid, usuario);
-      }
 
       return ResultadoAuth.exitoso(usuario);
     } catch (e) {
@@ -173,7 +159,6 @@ class AuthService {
       print('✅ Sesión cerrada exitosamente');
     } catch (e) {
       print('⚠️ Error cerrando sesión: $e');
-      // Continuar aunque falle el logout de Firebase
     }
   }
 
@@ -186,11 +171,14 @@ class AuthService {
   Future<Usuario?> obtenerUsuarioActual() async {
     User? user = _auth.currentUser;
     if (user != null) {
+      String email = user.email ?? '';
+      bool esAdminHardcodeado = email.contains('admin@naboocustoms.local');
+
       return Usuario(
         id: user.uid,
-        email: user.email ?? 'unknown@example.com',
-        nombre: user.displayName ?? 'Usuario',
-        rol: 'cliente',
+        email: email,
+        nombre: user.displayName ?? (esAdminHardcodeado ? 'Administrador' : 'Usuario'),
+        rol: esAdminHardcodeado ? 'admin' : 'cliente',
         activo: true,
         fechaCreacion: DateTime.now(),
       );
@@ -203,73 +191,70 @@ class AuthService {
     User? user = _auth.currentUser;
     if (user != null) {
       String email = user.email ?? '';
-      return email.contains('@naboocustoms.local') || email == _adminEmail;
+      return email.contains('admin@naboocustoms.local');
     }
     return false;
   }
 
-  /// Crear nuevo usuario SOLO EN FIREBASE AUTH
+  /// Crear nuevo usuario - SOLO CON USUARIO Y CONTRASEÑA
   Future<ResultadoAuth> crearUsuario({
-    required String email,
-    required String password,
+    required String usuario,
     required String nombre,
+    required String password,
     String rol = 'cliente',
   }) async {
     try {
-      print('👤 Creando usuario SOLO Firebase Auth: $email');
+      print('👤 Creando usuario: $usuario');
 
-      // Crear usuario en Firebase Auth
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
+      // Verificar que el usuario no exista
+      QuerySnapshot existeQuery = await _firestore
+          .collection('usuarios')
+          .where('usuario', isEqualTo: usuario.trim().toLowerCase())
+          .limit(1)
+          .get();
 
-      String userId = userCredential.user!.uid;
-      print('✅ Usuario creado en Firebase Auth con UID: $userId');
+      if (existeQuery.docs.isNotEmpty) {
+        return ResultadoAuth.error('El usuario "$usuario" ya existe');
+      }
 
-      // Actualizar el display name
-      await userCredential.user?.updateDisplayName(nombre);
-
-      // Crear objeto usuario
+      // Crear nuevo usuario en Firestore
       Usuario nuevoUsuario = Usuario(
-        id: userId,
-        email: email.trim(),
+        id: '', // Se asignará automáticamente
+        email: '${usuario.trim().toLowerCase()}@naboocustoms.local', // Email temporal
         nombre: nombre.trim(),
         rol: rol,
         activo: true,
         fechaCreacion: DateTime.now(),
       );
 
-      // Guardar en Firestore de forma asíncrona
-      _guardarUsuarioAsync(userId, nuevoUsuario);
+      // Guardar en Firestore con campos adicionales
+      DocumentReference docRef = await _firestore.collection('usuarios').add({
+        'usuario': usuario.trim().toLowerCase(),
+        'nombre': nombre.trim(),
+        'password': password, // En un sistema real esto sería hasheado
+        'rol': rol,
+        'activo': true,
+        'fechaCreacion': FieldValue.serverTimestamp(),
+        'email': '${usuario.trim().toLowerCase()}@naboocustoms.local',
+      });
 
-      print('✅ Usuario creado exitosamente: ${nuevoUsuario.email}');
+      // Actualizar el usuario con el ID correcto
+      nuevoUsuario = Usuario(
+        id: docRef.id,
+        email: nuevoUsuario.email,
+        nombre: nuevoUsuario.nombre,
+        rol: nuevoUsuario.rol,
+        activo: nuevoUsuario.activo,
+        fechaCreacion: nuevoUsuario.fechaCreacion,
+      );
+
+      print('✅ Usuario creado exitosamente: $usuario');
       return ResultadoAuth.exitoso(nuevoUsuario);
 
-    } on FirebaseAuthException catch (e) {
-      print('❌ Error Firebase Auth creando usuario: ${e.code} - ${e.message}');
-      return ResultadoAuth.error(_manejarErrorAuth(e));
     } catch (e) {
       print('❌ Error creando usuario: $e');
       return ResultadoAuth.error('Error creando usuario: $e');
     }
-  }
-
-  /// Obtener todos los usuarios - SIMPLIFICADO
-  Stream<List<Usuario>> obtenerTodosLosUsuarios() {
-    print('📋 Obteniendo usuarios de Firebase Auth...');
-
-    // Retornar stream básico que no cause problemas
-    return Stream.value([
-      Usuario(
-        id: 'placeholder',
-        email: 'Carga usuarios con "Verificar Datos"',
-        nombre: 'Lista vacía por seguridad',
-        rol: 'cliente',
-        activo: false,
-        fechaCreacion: DateTime.now(),
-      )
-    ]);
   }
 
   /// Cargar usuarios de forma manual y segura
@@ -290,7 +275,7 @@ class AuthService {
 
           Usuario usuario = Usuario(
             id: doc.id,
-            email: data['email']?.toString() ?? 'sin-email',
+            email: data['email']?.toString() ?? '${data['usuario']}@naboocustoms.local',
             nombre: data['nombre']?.toString() ?? 'Sin nombre',
             rol: data['rol']?.toString() ?? 'cliente',
             activo: data['activo'] == true,
@@ -298,10 +283,9 @@ class AuthService {
           );
 
           usuarios.add(usuario);
-          print('✅ Usuario cargado: ${usuario.email}');
+          print('✅ Usuario cargado: ${data['usuario']} - ${usuario.nombre}');
         } catch (e) {
-          print('⚠️ Error con usuario ${doc.id}, eliminando: $e');
-          await doc.reference.delete();
+          print('⚠️ Error con usuario ${doc.id}: $e');
         }
       }
 
@@ -348,71 +332,45 @@ class AuthService {
     }
   }
 
-  /// Actualizar usuario
-  Future<bool> actualizarUsuario(String uid, Usuario usuario) async {
-    try {
-      print('📝 Actualizando usuario: $uid');
-      await _firestore.collection('usuarios').doc(uid).update(usuario.toFirestore());
-      return true;
-    } catch (e) {
-      print('❌ Error actualizando usuario: $e');
-      return false;
-    }
-  }
-
   /// LIMPIAR TODA LA BASE DE DATOS
   Future<void> limpiarBaseDatos() async {
     try {
       print('🧹 LIMPIANDO TODA LA BASE DE DATOS...');
 
-      QuerySnapshot snapshot = await _firestore.collection('usuarios').get();
-
-      for (var doc in snapshot.docs) {
+      // Limpiar usuarios
+      QuerySnapshot usuariosSnapshot = await _firestore.collection('usuarios').get();
+      for (var doc in usuariosSnapshot.docs) {
         await doc.reference.delete();
-        print('🗑️ Eliminado: ${doc.id}');
+        print('🗑️ Usuario eliminado: ${doc.id}');
+      }
+
+      // Limpiar figuras
+      QuerySnapshot figurasSnapshot = await _firestore.collection('figuras').get();
+      for (var doc in figurasSnapshot.docs) {
+        await doc.reference.delete();
+        print('🗑️ Figura eliminada: ${doc.id}');
+      }
+
+      // Limpiar configuraciones
+      QuerySnapshot configSnapshot = await _firestore.collection('configuraciones').get();
+      for (var doc in configSnapshot.docs) {
+        await doc.reference.delete();
+        print('🗑️ Configuración eliminada: ${doc.id}');
       }
 
       print('✅ Base de datos limpiada completamente');
     } catch (e) {
       print('❌ Error limpiando base de datos: $e');
+      rethrow;
     }
   }
 
   // ==================== UTILIDADES ====================
 
-  String _manejarErrorAuth(FirebaseAuthException e) {
-    switch (e.code) {
-      case 'user-not-found':
-        return 'Usuario no encontrado';
-      case 'wrong-password':
-        return 'Contraseña incorrecta';
-      case 'invalid-email':
-        return 'Email inválido';
-      case 'user-disabled':
-        return 'Usuario deshabilitado';
-      case 'too-many-requests':
-        return 'Demasiados intentos. Intenta más tarde';
-      case 'email-already-in-use':
-        return 'El email ya está en uso';
-      case 'weak-password':
-        return 'La contraseña es muy débil (mínimo 6 caracteres)';
-      case 'invalid-credential':
-        return 'Credenciales inválidas';
-      case 'network-request-failed':
-        return 'Error de red. Verifica tu conexión a internet';
-      case 'operation-not-allowed':
-        return 'Operación no permitida';
-      default:
-        return 'Error de autenticación: ${e.message ?? 'Desconocido'}';
-    }
-  }
-
-  static bool emailValido(String email) {
-    String emailLimpio = email.trim().toLowerCase();
-    if (emailLimpio == 'admin' || emailLimpio == 'usuario') {
-      return true;
-    }
-    return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
+  static bool usuarioValido(String usuario) {
+    String usuarioLimpio = usuario.trim().toLowerCase();
+    // Solo letras, números y algunos caracteres especiales
+    return RegExp(r'^[a-zA-Z0-9._-]+$').hasMatch(usuarioLimpio) && usuarioLimpio.length >= 3;
   }
 
   static bool passwordValida(String password) {
@@ -421,10 +379,10 @@ class AuthService {
 
   Future<bool> verificarConexion() async {
     try {
-      _auth.currentUser;
+      await _firestore.collection('test').limit(1).get();
       return true;
     } catch (e) {
-      print('❌ Error verificando conexión Firebase Auth: $e');
+      print('❌ Error verificando conexión: $e');
       return false;
     }
   }

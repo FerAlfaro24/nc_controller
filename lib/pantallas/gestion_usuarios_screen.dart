@@ -82,7 +82,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
                 controller: _busquedaController,
                 style: const TextStyle(color: ColoresApp.textoPrimario),
                 decoration: InputDecoration(
-                  hintText: 'Buscar usuarios...',
+                  hintText: 'Buscar por nombre o usuario...',
                   hintStyle: const TextStyle(color: ColoresApp.textoApagado),
                   prefixIcon: const Icon(Icons.search, color: ColoresApp.cyanPrimario),
                   filled: true,
@@ -123,7 +123,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
     final usuariosFiltrados = _usuarios.where((usuario) {
       if (_terminoBusqueda.isEmpty) return true;
       return usuario.nombre.toLowerCase().contains(_terminoBusqueda) ||
-          usuario.email.toLowerCase().contains(_terminoBusqueda);
+          usuario.email.split('@')[0].toLowerCase().contains(_terminoBusqueda); // Buscar por usuario también
     }).toList();
 
     if (usuariosFiltrados.isEmpty) {
@@ -171,6 +171,9 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
   }
 
   Widget _construirTarjetaUsuario(BuildContext context, Usuario usuario) {
+    // Extraer el nombre de usuario del email
+    String nombreUsuario = usuario.email.split('@')[0];
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -202,14 +205,30 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         title: Row(
           children: [
             Expanded(
-              child: Text(
-                usuario.nombre,
-                style: const TextStyle(
-                  color: ColoresApp.textoPrimario,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Nombre completo
+                  Text(
+                    usuario.nombre,
+                    style: const TextStyle(
+                      color: ColoresApp.textoPrimario,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  // Usuario (sin @naboocustoms.local)
+                  Text(
+                    '@$nombreUsuario',
+                    style: const TextStyle(
+                      color: ColoresApp.textoSecundario,
+                      fontSize: 14,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ),
             ),
             if (usuario.esAdmin)
@@ -233,15 +252,6 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 4),
-            Text(
-              usuario.email,
-              style: const TextStyle(
-                color: ColoresApp.textoSecundario,
-                fontSize: 14,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
             const SizedBox(height: 8),
             Row(
               children: [
@@ -329,10 +339,10 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
       context: context,
       builder: (context) => _DialogoUsuario(
         titulo: 'Crear Usuario',
-        onGuardar: (email, nombre, password, rol) async {
+        onGuardar: (usuario, nombre, password, rol) async {
           final authService = context.read<AuthService>();
           final resultado = await authService.crearUsuario(
-            email: email,
+            usuario: usuario,
             nombre: nombre,
             password: password,
             rol: rol,
@@ -391,6 +401,8 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
   }
 
   Future<void> _confirmarEliminarUsuario(BuildContext context, Usuario usuario) async {
+    String nombreUsuario = usuario.email.split('@')[0];
+
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -400,7 +412,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
           style: TextStyle(color: ColoresApp.textoPrimario),
         ),
         content: Text(
-          '¿Estás seguro de que quieres eliminar al usuario "${usuario.nombre}"?\n\nEsta acción no se puede deshacer.',
+          '¿Estás seguro de que quieres eliminar al usuario "@$nombreUsuario" (${usuario.nombre})?\n\nEsta acción no se puede deshacer.',
           style: const TextStyle(color: ColoresApp.textoSecundario),
         ),
         actions: [
@@ -449,7 +461,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
 class _DialogoUsuario extends StatefulWidget {
   final String titulo;
   final Usuario? usuario;
-  final Function(String email, String nombre, String password, String rol) onGuardar;
+  final Function(String usuario, String nombre, String password, String rol) onGuardar;
 
   const _DialogoUsuario({
     required this.titulo,
@@ -463,7 +475,7 @@ class _DialogoUsuario extends StatefulWidget {
 
 class _DialogoUsuarioState extends State<_DialogoUsuario> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  final _usuarioController = TextEditingController();
   final _nombreController = TextEditingController();
   final _passwordController = TextEditingController();
   String _rolSeleccionado = 'cliente';
@@ -473,7 +485,7 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
   void initState() {
     super.initState();
     if (widget.usuario != null) {
-      _emailController.text = widget.usuario!.email;
+      _usuarioController.text = widget.usuario!.email.split('@')[0]; // Extraer usuario del email
       _nombreController.text = widget.usuario!.nombre;
       _rolSeleccionado = widget.usuario!.rol;
     }
@@ -481,7 +493,7 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _usuarioController.dispose();
     _nombreController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -503,20 +515,24 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Campo Email
+              // Campo Usuario
               TextFormField(
-                controller: _emailController,
+                controller: _usuarioController,
                 style: const TextStyle(color: ColoresApp.textoPrimario),
                 decoration: const InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: Icon(Icons.email, color: ColoresApp.cyanPrimario),
+                  labelText: 'Usuario',
+                  hintText: 'juan123, maria_garcia, etc.',
+                  prefixIcon: Icon(Icons.person, color: ColoresApp.cyanPrimario),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Por favor ingresa un email';
+                    return 'Por favor ingresa un usuario';
                   }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                    return 'Ingresa un email válido';
+                  if (value.length < 3) {
+                    return 'El usuario debe tener al menos 3 caracteres';
+                  }
+                  if (!RegExp(r'^[a-zA-Z0-9._-]+$').hasMatch(value)) {
+                    return 'Solo letras, números, puntos, guiones y guiones bajos';
                   }
                   return null;
                 },
@@ -529,7 +545,7 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
                 style: const TextStyle(color: ColoresApp.textoPrimario),
                 decoration: const InputDecoration(
                   labelText: 'Nombre completo',
-                  prefixIcon: Icon(Icons.person, color: ColoresApp.cyanPrimario),
+                  prefixIcon: Icon(Icons.badge, color: ColoresApp.cyanPrimario),
                 ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
@@ -561,8 +577,8 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
                     if (value == null || value.isEmpty) {
                       return 'Por favor ingresa una contraseña';
                     }
-                    if (value.length < 6) {
-                      return 'La contraseña debe tener al menos 6 caracteres';
+                    if (value.length < 4) {
+                      return 'La contraseña debe tener al menos 4 caracteres';
                     }
                     return null;
                   },
@@ -606,7 +622,7 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
           onPressed: () {
             if (_formKey.currentState!.validate()) {
               widget.onGuardar(
-                _emailController.text.trim(),
+                _usuarioController.text.trim(),
                 _nombreController.text.trim(),
                 _passwordController.text,
                 _rolSeleccionado,
