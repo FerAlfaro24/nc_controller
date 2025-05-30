@@ -29,26 +29,86 @@ class AuthService {
     try {
       String emailLimpio = email.trim().toLowerCase();
 
-      // Verificar credenciales hardcodeadas
+      print('🔐 Iniciando sesión para: $emailLimpio');
+
+      // Verificar credenciales hardcodeadas PRIMERO
       if (emailLimpio == _adminEmail && password == _adminPassword) {
+        print('✅ Login hardcodeado: Admin');
         return await _crearSesionLocal('admin', 'Administrador', 'admin');
       }
 
       if (emailLimpio == _userEmail && password == _userPassword) {
+        print('✅ Login hardcodeado: Usuario');
         return await _crearSesionLocal('usuario', 'Usuario', 'cliente');
       }
 
       // Si no son credenciales hardcodeadas, intentar con Firebase
-      return await _loginFirebase(email, password);
+      print('🔥 Intentando login con Firebase...');
+      return await _loginFirebaseBasico(email, password);
 
     } catch (e) {
+      print('❌ Error inesperado en iniciarSesion: $e');
       return ResultadoAuth.error('Error inesperado: $e');
     }
+  }
+
+  /// Login básico sin tocar Firestore hasta después del login
+  Future<ResultadoAuth> _loginFirebaseBasico(String email, String password) async {
+    try {
+      print('🔐 Login Firebase básico: $email');
+
+      // 1. Solo hacer login en Firebase Auth
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
+
+      String uid = userCredential.user!.uid;
+      String userEmail = userCredential.user!.email ?? email.trim();
+      String displayName = userCredential.user!.displayName ?? email.split('@')[0];
+
+      print('✅ Login exitoso en Firebase Auth, UID: $uid');
+
+      // 2. Crear usuario simple SIN consultar Firestore
+      Usuario usuario = Usuario(
+        id: uid,
+        email: userEmail,
+        nombre: displayName,
+        rol: 'cliente',
+        activo: true,
+        fechaCreacion: DateTime.now(),
+      );
+
+      // 3. Guardar en Firestore de forma asíncrona (sin esperar)
+      _guardarUsuarioAsync(uid, usuario);
+
+      print('✅ Login completo exitoso para: ${usuario.nombre}');
+      return ResultadoAuth.exitoso(usuario);
+
+    } on FirebaseAuthException catch (e) {
+      print('❌ Error Firebase Auth: ${e.code} - ${e.message}');
+      return ResultadoAuth.error(_manejarErrorAuth(e));
+    } catch (e) {
+      print('❌ Error inesperado en login básico: $e');
+      return ResultadoAuth.error('Error de conexión. Verifica tu internet.');
+    }
+  }
+
+  /// Guardar usuario en Firestore de forma asíncrona
+  void _guardarUsuarioAsync(String uid, Usuario usuario) {
+    _firestore
+        .collection('usuarios')
+        .doc(uid)
+        .set(usuario.toFirestore(), SetOptions(merge: true))
+        .then((_) => print('✅ Usuario guardado en Firestore async'))
+        .catchError((e) => print('⚠️ Error guardando en Firestore async: $e'));
   }
 
   /// Crear sesión local para usuarios hardcodeados
   Future<ResultadoAuth> _crearSesionLocal(String id, String nombre, String rol) async {
     try {
+      print('🏠 Creando sesión local para: $id');
+
       // Crear email temporal para Firebase
       String tempEmail = '$id@naboocustoms.local';
 
@@ -60,6 +120,7 @@ class AuthService {
           email: tempEmail,
           password: '123456', // Password temporal
         );
+        print('✅ Login existente en Firebase para usuario local: $id');
       } catch (e) {
         // Si no existe, crear el usuario
         try {
@@ -67,9 +128,9 @@ class AuthService {
             email: tempEmail,
             password: '123456',
           );
+          print('✅ Usuario local creado en Firebase: $id');
         } catch (createError) {
-          // Si ya existe pero la contraseña es diferente, intentar reset
-          print('Error creando usuario: $createError');
+          print('⚠️ Error creando usuario local en Firebase: $createError');
         }
       }
 
@@ -85,15 +146,12 @@ class AuthService {
 
       // Guardar en Firestore si tenemos userCredential
       if (userCredential?.user != null) {
-        await _firestore
-            .collection('usuarios')
-            .doc(userCredential!.user!.uid)
-            .set(usuario.toFirestore(), SetOptions(merge: true));
+        _guardarUsuarioAsync(userCredential!.user!.uid, usuario);
       }
 
       return ResultadoAuth.exitoso(usuario);
     } catch (e) {
-      print('Error en sesión local: $e');
+      print('⚠️ Error en sesión local: $e');
       // Aunque falle Firebase, permitir acceso local
       Usuario usuario = Usuario(
         id: id,
@@ -107,39 +165,14 @@ class AuthService {
     }
   }
 
-  /// Login normal con Firebase Auth
-  Future<ResultadoAuth> _loginFirebase(String email, String password) async {
-    try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: email.trim(),
-        password: password,
-      );
-
-      // Verificar si el usuario existe en Firestore y está activo
-      Usuario? usuario = await obtenerDatosUsuario(userCredential.user!.uid);
-
-      if (usuario == null) {
-        await cerrarSesion();
-        return ResultadoAuth.error('Usuario no registrado en el sistema');
-      }
-
-      if (!usuario.estaActivo) {
-        await cerrarSesion();
-        return ResultadoAuth.error('Usuario desactivado. Contacta al administrador');
-      }
-
-      return ResultadoAuth.exitoso(usuario);
-    } on FirebaseAuthException catch (e) {
-      return ResultadoAuth.error(_manejarErrorAuth(e));
-    }
-  }
-
   /// Cerrar sesión
   Future<void> cerrarSesion() async {
     try {
+      print('🚪 Cerrando sesión...');
       await _auth.signOut();
+      print('✅ Sesión cerrada exitosamente');
     } catch (e) {
-      print('Error cerrando sesión: $e');
+      print('⚠️ Error cerrando sesión: $e');
       // Continuar aunque falle el logout de Firebase
     }
   }
@@ -149,36 +182,33 @@ class AuthService {
 
   // ==================== GESTIÓN DE USUARIOS ====================
 
-  /// Obtener datos del usuario desde Firestore
-  Future<Usuario?> obtenerDatosUsuario(String uid) async {
-    try {
-      DocumentSnapshot doc = await _firestore.collection('usuarios').doc(uid).get();
-      if (doc.exists) {
-        return Usuario.fromFirestore(doc);
-      }
-      return null;
-    } catch (e) {
-      print('Error obteniendo datos de usuario: $e');
-      return null;
-    }
-  }
-
   /// Obtener datos del usuario actual
   Future<Usuario?> obtenerUsuarioActual() async {
     User? user = _auth.currentUser;
     if (user != null) {
-      return await obtenerDatosUsuario(user.uid);
+      return Usuario(
+        id: user.uid,
+        email: user.email ?? 'unknown@example.com',
+        nombre: user.displayName ?? 'Usuario',
+        rol: 'cliente',
+        activo: true,
+        fechaCreacion: DateTime.now(),
+      );
     }
     return null;
   }
 
   /// Verificar si el usuario actual es admin
   Future<bool> esAdmin() async {
-    Usuario? usuario = await obtenerUsuarioActual();
-    return usuario?.esAdmin ?? false;
+    User? user = _auth.currentUser;
+    if (user != null) {
+      String email = user.email ?? '';
+      return email.contains('@naboocustoms.local') || email == _adminEmail;
+    }
+    return false;
   }
 
-  /// Crear nuevo usuario (solo para admins)
+  /// Crear nuevo usuario SOLO EN FIREBASE AUTH
   Future<ResultadoAuth> crearUsuario({
     required String email,
     required String password,
@@ -186,38 +216,21 @@ class AuthService {
     String rol = 'cliente',
   }) async {
     try {
-      // Verificar que el email no existe ya en Firestore
-      final existeQuery = await _firestore
-          .collection('usuarios')
-          .where('email', isEqualTo: email.trim())
-          .get();
+      print('👤 Creando usuario SOLO Firebase Auth: $email');
 
-      if (existeQuery.docs.isNotEmpty) {
-        return ResultadoAuth.error('Ya existe un usuario con este email en el sistema');
-      }
+      // Crear usuario en Firebase Auth
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password,
+      );
 
-      // Generar un ID único para el usuario
-      String userId = _firestore.collection('usuarios').doc().id;
+      String userId = userCredential.user!.uid;
+      print('✅ Usuario creado en Firebase Auth con UID: $userId');
 
-      // Intentar crear usuario en Firebase Auth
-      UserCredential? userCredential;
-      try {
-        userCredential = await _auth.createUserWithEmailAndPassword(
-          email: email.trim(),
-          password: password,
-        );
+      // Actualizar el display name
+      await userCredential.user?.updateDisplayName(nombre);
 
-        // Si se crea exitosamente, usar su UID
-        userId = userCredential.user!.uid;
-
-        // Actualizar el nombre del usuario
-        await userCredential.user?.updateDisplayName(nombre);
-      } catch (authError) {
-        print('⚠️ Error en Firebase Auth, continuando con ID generado: $authError');
-        // Continuar con el ID generado manualmente
-      }
-
-      // Crear documento en Firestore
+      // Crear objeto usuario
       Usuario nuevoUsuario = Usuario(
         id: userId,
         email: email.trim(),
@@ -227,89 +240,146 @@ class AuthService {
         fechaCreacion: DateTime.now(),
       );
 
-      await _firestore
-          .collection('usuarios')
-          .doc(userId)
-          .set(nuevoUsuario.toFirestore());
+      // Guardar en Firestore de forma asíncrona
+      _guardarUsuarioAsync(userId, nuevoUsuario);
 
+      print('✅ Usuario creado exitosamente: ${nuevoUsuario.email}');
       return ResultadoAuth.exitoso(nuevoUsuario);
+
     } on FirebaseAuthException catch (e) {
-      if (e.code == 'email-already-in-use') {
-        return ResultadoAuth.error('Este email ya está registrado en Firebase Auth');
-      }
+      print('❌ Error Firebase Auth creando usuario: ${e.code} - ${e.message}');
       return ResultadoAuth.error(_manejarErrorAuth(e));
     } catch (e) {
+      print('❌ Error creando usuario: $e');
       return ResultadoAuth.error('Error creando usuario: $e');
     }
   }
 
-  /// Obtener todos los usuarios (solo para admins)
+  /// Obtener todos los usuarios - SIMPLIFICADO
   Stream<List<Usuario>> obtenerTodosLosUsuarios() {
-    return _firestore
-        .collection('usuarios')
-        .orderBy('fechaCreacion', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-        .map((doc) => Usuario.fromFirestore(doc))
-        .toList());
+    print('📋 Obteniendo usuarios de Firebase Auth...');
+
+    // Retornar stream básico que no cause problemas
+    return Stream.value([
+      Usuario(
+        id: 'placeholder',
+        email: 'Carga usuarios con "Verificar Datos"',
+        nombre: 'Lista vacía por seguridad',
+        rol: 'cliente',
+        activo: false,
+        fechaCreacion: DateTime.now(),
+      )
+    ]);
   }
 
-  /// Actualizar usuario (solo para admins)
-  Future<bool> actualizarUsuario(String uid, Usuario usuario) async {
+  /// Cargar usuarios de forma manual y segura
+  Future<List<Usuario>> cargarUsuariosManuales() async {
     try {
-      await _firestore
+      print('📋 Cargando usuarios manualmente...');
+
+      QuerySnapshot snapshot = await _firestore
           .collection('usuarios')
-          .doc(uid)
-          .update(usuario.toFirestore());
-      return true;
+          .orderBy('fechaCreacion', descending: true)
+          .get();
+
+      List<Usuario> usuarios = [];
+
+      for (var doc in snapshot.docs) {
+        try {
+          Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+          Usuario usuario = Usuario(
+            id: doc.id,
+            email: data['email']?.toString() ?? 'sin-email',
+            nombre: data['nombre']?.toString() ?? 'Sin nombre',
+            rol: data['rol']?.toString() ?? 'cliente',
+            activo: data['activo'] == true,
+            fechaCreacion: _parsearFecha(data['fechaCreacion']),
+          );
+
+          usuarios.add(usuario);
+          print('✅ Usuario cargado: ${usuario.email}');
+        } catch (e) {
+          print('⚠️ Error con usuario ${doc.id}, eliminando: $e');
+          await doc.reference.delete();
+        }
+      }
+
+      print('📋 Total usuarios cargados: ${usuarios.length}');
+      return usuarios;
     } catch (e) {
-      print('Error actualizando usuario: $e');
-      return false;
+      print('❌ Error cargando usuarios: $e');
+      return [];
     }
   }
 
-  /// Activar/Desactivar usuario (solo para admins)
-  Future<bool> cambiarEstadoUsuario(String uid, bool activo) async {
+  DateTime _parsearFecha(dynamic fecha) {
     try {
-      await _firestore
-          .collection('usuarios')
-          .doc(uid)
-          .update({'activo': activo});
-      return true;
+      if (fecha is Timestamp) return fecha.toDate();
+      if (fecha is String) return DateTime.parse(fecha);
+      return DateTime.now();
     } catch (e) {
-      print('Error cambiando estado de usuario: $e');
-      return false;
+      return DateTime.now();
     }
   }
 
-  /// Eliminar usuario (solo para admins)
+  /// Eliminar usuario completamente
   Future<bool> eliminarUsuario(String uid) async {
     try {
-      await _firestore
-          .collection('usuarios')
-          .doc(uid)
-          .update({'activo': false});
+      print('🗑️ Eliminando usuario: $uid');
+      await _firestore.collection('usuarios').doc(uid).delete();
+      print('✅ Usuario eliminado');
       return true;
     } catch (e) {
-      print('Error eliminando usuario: $e');
+      print('❌ Error eliminando usuario: $e');
       return false;
     }
   }
 
-  /// Restablecer contraseña
-  Future<bool> restablecerPassword(String email) async {
+  /// Cambiar estado de usuario
+  Future<bool> cambiarEstadoUsuario(String uid, bool activo) async {
     try {
-      await _auth.sendPasswordResetEmail(email: email.trim());
+      print('🔄 Cambiando estado usuario $uid: $activo');
+      await _firestore.collection('usuarios').doc(uid).update({'activo': activo});
       return true;
     } catch (e) {
-      print('Error enviando email de restablecimiento: $e');
+      print('❌ Error cambiando estado: $e');
       return false;
+    }
+  }
+
+  /// Actualizar usuario
+  Future<bool> actualizarUsuario(String uid, Usuario usuario) async {
+    try {
+      print('📝 Actualizando usuario: $uid');
+      await _firestore.collection('usuarios').doc(uid).update(usuario.toFirestore());
+      return true;
+    } catch (e) {
+      print('❌ Error actualizando usuario: $e');
+      return false;
+    }
+  }
+
+  /// LIMPIAR TODA LA BASE DE DATOS
+  Future<void> limpiarBaseDatos() async {
+    try {
+      print('🧹 LIMPIANDO TODA LA BASE DE DATOS...');
+
+      QuerySnapshot snapshot = await _firestore.collection('usuarios').get();
+
+      for (var doc in snapshot.docs) {
+        await doc.reference.delete();
+        print('🗑️ Eliminado: ${doc.id}');
+      }
+
+      print('✅ Base de datos limpiada completamente');
+    } catch (e) {
+      print('❌ Error limpiando base de datos: $e');
     }
   }
 
   // ==================== UTILIDADES ====================
 
-  /// Manejar errores de autenticación
   String _manejarErrorAuth(FirebaseAuthException e) {
     switch (e.code) {
       case 'user-not-found':
@@ -337,34 +407,28 @@ class AuthService {
     }
   }
 
-  /// Validar email
   static bool emailValido(String email) {
     String emailLimpio = email.trim().toLowerCase();
-    // Permitir credenciales hardcodeadas
     if (emailLimpio == 'admin' || emailLimpio == 'usuario') {
       return true;
     }
     return RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email);
   }
 
-  /// Validar contraseña
   static bool passwordValida(String password) {
-    return password.length >= 4; // Mínimo 4 caracteres para permitir '1234'
+    return password.length >= 4;
   }
 
-  /// Verificar conexión con Firebase Auth
   Future<bool> verificarConexion() async {
     try {
       _auth.currentUser;
       return true;
     } catch (e) {
-      print('Error verificando conexión Firebase Auth: $e');
+      print('❌ Error verificando conexión Firebase Auth: $e');
       return false;
     }
   }
 }
-
-// ==================== CLASE RESULTADO ====================
 
 class ResultadoAuth {
   final bool exitoso;

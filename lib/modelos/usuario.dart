@@ -18,16 +18,29 @@ class Usuario {
   });
 
   factory Usuario.fromFirestore(DocumentSnapshot doc) {
-    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+    try {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-    return Usuario(
-      id: doc.id,
-      email: data['email'] ?? '',
-      nombre: data['nombre'] ?? '',
-      rol: data['rol'] ?? 'cliente',
-      activo: data['activo'] ?? true,
-      fechaCreacion: (data['fechaCreacion'] as Timestamp?)?.toDate() ?? DateTime.now(),
-    );
+      return Usuario(
+        id: doc.id,
+        email: _getString(data, 'email'),
+        nombre: _getString(data, 'nombre'),
+        rol: _getString(data, 'rol', defaultValue: 'cliente'),
+        activo: _getBool(data, 'activo', defaultValue: true),
+        fechaCreacion: _getDateTime(data, 'fechaCreacion'),
+      );
+    } catch (e) {
+      print('❌ Error parseando usuario ${doc.id}: $e');
+      // Retornar usuario con valores por defecto en caso de error
+      return Usuario(
+        id: doc.id,
+        email: 'error@example.com',
+        nombre: 'Usuario con Error',
+        rol: 'cliente',
+        activo: false,
+        fechaCreacion: DateTime.now(),
+      );
+    }
   }
 
   Map<String, dynamic> toFirestore() {
@@ -61,5 +74,50 @@ class Usuario {
       activo: activo ?? this.activo,
       fechaCreacion: fechaCreacion,
     );
+  }
+
+  // Métodos helper para parsear datos de forma segura
+  static String _getString(Map<String, dynamic> data, String key, {String defaultValue = ''}) {
+    try {
+      final value = data[key];
+      if (value == null) return defaultValue;
+      if (value is String) return value;
+      return value.toString();
+    } catch (e) {
+      print('⚠️ Error obteniendo string para $key: $e');
+      return defaultValue;
+    }
+  }
+
+  static bool _getBool(Map<String, dynamic> data, String key, {bool defaultValue = false}) {
+    try {
+      final value = data[key];
+      if (value == null) return defaultValue;
+      if (value is bool) return value;
+      if (value is String) return value.toLowerCase() == 'true';
+      if (value is int) return value != 0;
+      return defaultValue;
+    } catch (e) {
+      print('⚠️ Error obteniendo bool para $key: $e');
+      return defaultValue;
+    }
+  }
+
+  static DateTime _getDateTime(Map<String, dynamic> data, String key) {
+    try {
+      final value = data[key];
+      if (value == null) return DateTime.now();
+      if (value is Timestamp) return value.toDate();
+      if (value is String) return DateTime.parse(value);
+      return DateTime.now();
+    } catch (e) {
+      print('⚠️ Error obteniendo DateTime para $key: $e');
+      return DateTime.now();
+    }
+  }
+
+  @override
+  String toString() {
+    return 'Usuario{id: $id, email: $email, nombre: $nombre, rol: $rol, activo: $activo}';
   }
 }

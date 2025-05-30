@@ -14,11 +14,41 @@ class PantallaGestionUsuarios extends StatefulWidget {
 class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
   final TextEditingController _busquedaController = TextEditingController();
   String _terminoBusqueda = '';
+  List<Usuario> _usuarios = [];
+  bool _cargando = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarUsuarios();
+  }
 
   @override
   void dispose() {
     _busquedaController.dispose();
     super.dispose();
+  }
+
+  Future<void> _cargarUsuarios() async {
+    setState(() => _cargando = true);
+    try {
+      final authService = context.read<AuthService>();
+      final usuarios = await authService.cargarUsuariosManuales();
+      setState(() {
+        _usuarios = usuarios;
+        _cargando = false;
+      });
+    } catch (e) {
+      setState(() => _cargando = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error cargando usuarios: $e'),
+            backgroundColor: ColoresApp.error,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -29,6 +59,10 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         title: const Text('GESTIÓN DE USUARIOS'),
         backgroundColor: ColoresApp.superficieOscura,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: ColoresApp.cyanPrimario),
+            onPressed: _cargarUsuarios,
+          ),
           IconButton(
             icon: const Icon(Icons.person_add, color: ColoresApp.cyanPrimario),
             onPressed: () => _mostrarDialogoCrearUsuario(context),
@@ -42,7 +76,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         child: Column(
           children: [
             // Barra de búsqueda
-            Container(
+            Padding(
               padding: const EdgeInsets.all(16),
               child: TextField(
                 controller: _busquedaController,
@@ -68,88 +102,11 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
 
             // Lista de usuarios
             Expanded(
-              child: StreamBuilder<List<Usuario>>(
-                stream: context.read<AuthService>().obtenerTodosLosUsuarios(),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(
-                      child: CircularProgressIndicator(color: ColoresApp.cyanPrimario),
-                    );
-                  }
-
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            size: 64,
-                            color: ColoresApp.error,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Error al cargar usuarios',
-                            style: TextStyle(
-                              color: ColoresApp.error,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '${snapshot.error}',
-                            style: const TextStyle(color: ColoresApp.textoSecundario),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  final usuarios = snapshot.data ?? [];
-                  final usuariosFiltrados = usuarios.where((usuario) {
-                    if (_terminoBusqueda.isEmpty) return true;
-                    return usuario.nombre.toLowerCase().contains(_terminoBusqueda) ||
-                        usuario.email.toLowerCase().contains(_terminoBusqueda);
-                  }).toList();
-
-                  if (usuariosFiltrados.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.people_outline,
-                            size: 64,
-                            color: ColoresApp.textoApagado,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _terminoBusqueda.isEmpty
-                                ? 'No hay usuarios registrados'
-                                : 'No se encontraron usuarios',
-                            style: const TextStyle(
-                              color: ColoresApp.textoSecundario,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: usuariosFiltrados.length,
-                    itemBuilder: (context, index) {
-                      final usuario = usuariosFiltrados[index];
-                      return _construirTarjetaUsuario(context, usuario);
-                    },
-                  );
-                },
-              ),
+              child: _cargando
+                  ? const Center(
+                child: CircularProgressIndicator(color: ColoresApp.cyanPrimario),
+              )
+                  : _construirListaUsuarios(),
             ),
           ],
         ),
@@ -159,6 +116,57 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         backgroundColor: ColoresApp.cyanPrimario,
         child: const Icon(Icons.person_add, color: Colors.white),
       ),
+    );
+  }
+
+  Widget _construirListaUsuarios() {
+    final usuariosFiltrados = _usuarios.where((usuario) {
+      if (_terminoBusqueda.isEmpty) return true;
+      return usuario.nombre.toLowerCase().contains(_terminoBusqueda) ||
+          usuario.email.toLowerCase().contains(_terminoBusqueda);
+    }).toList();
+
+    if (usuariosFiltrados.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.people_outline,
+              size: 64,
+              color: ColoresApp.textoApagado,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _terminoBusqueda.isEmpty
+                  ? 'No hay usuarios registrados'
+                  : 'No se encontraron usuarios',
+              style: const TextStyle(
+                color: ColoresApp.textoSecundario,
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _cargarUsuarios,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ColoresApp.cyanPrimario,
+              ),
+              child: const Text('Recargar'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      itemCount: usuariosFiltrados.length,
+      itemBuilder: (context, index) {
+        final usuario = usuariosFiltrados[index];
+        return _construirTarjetaUsuario(context, usuario);
+      },
     );
   }
 
@@ -201,7 +209,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                 ),
-                overflow: TextOverflow.ellipsis, // Añade esto para truncar texto largo
+                overflow: TextOverflow.ellipsis,
               ),
             ),
             if (usuario.esAdmin)
@@ -232,7 +240,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
                 color: ColoresApp.textoSecundario,
                 fontSize: 14,
               ),
-              overflow: TextOverflow.ellipsis, // Añade esto para truncar email largo
+              overflow: TextOverflow.ellipsis,
             ),
             const SizedBox(height: 8),
             Row(
@@ -255,14 +263,14 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
                   ),
                 ),
                 const Spacer(),
-                Flexible( // Cambia a Flexible para que el texto se ajuste
+                Flexible(
                   child: Text(
-                    'Creado: ${_formatearFecha(usuario.fechaCreacion)}',
+                    'ID: ${usuario.id.substring(0, 8)}...',
                     style: const TextStyle(
                       color: ColoresApp.textoApagado,
                       fontSize: 10,
                     ),
-                    overflow: TextOverflow.ellipsis, // Añade esto para truncar fecha larga
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -272,30 +280,17 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         trailing: PopupMenuButton<String>(
           icon: const Icon(Icons.more_vert, color: ColoresApp.textoSecundario),
           color: ColoresApp.tarjetaOscura,
-          onSelected: (value) {
+          onSelected: (value) async {
             switch (value) {
-              case 'editar':
-                _mostrarDialogoEditarUsuario(context, usuario);
-                break;
               case 'toggle_estado':
-                _cambiarEstadoUsuario(context, usuario);
+                await _cambiarEstadoUsuario(context, usuario);
                 break;
               case 'eliminar':
-                _confirmarEliminarUsuario(context, usuario);
+                await _confirmarEliminarUsuario(context, usuario);
                 break;
             }
           },
           itemBuilder: (context) => [
-            const PopupMenuItem(
-              value: 'editar',
-              child: Row(
-                children: [
-                  Icon(Icons.edit, color: ColoresApp.cyanPrimario, size: 20),
-                  SizedBox(width: 8),
-                  Text('Editar', style: TextStyle(color: ColoresApp.textoPrimario)),
-                ],
-              ),
-            ),
             PopupMenuItem(
               value: 'toggle_estado',
               child: Row(
@@ -329,10 +324,6 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
     );
   }
 
-  String _formatearFecha(DateTime fecha) {
-    return '${fecha.day}/${fecha.month}/${fecha.year}';
-  }
-
   void _mostrarDialogoCrearUsuario(BuildContext context) {
     showDialog(
       context: context,
@@ -356,6 +347,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
                 ),
               );
               Navigator.of(context).pop();
+              await _cargarUsuarios();
             } else {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -370,50 +362,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
     );
   }
 
-  void _mostrarDialogoEditarUsuario(BuildContext context, Usuario usuario) {
-    showDialog(
-      context: context,
-      builder: (context) => _DialogoUsuario(
-        titulo: 'Editar Usuario',
-        usuario: usuario,
-        onGuardar: (email, nombre, password, rol) async {
-          final authService = context.read<AuthService>();
-
-          final usuarioActualizado = usuario.copiarCon(
-            email: email,
-            nombre: nombre,
-            rol: rol,
-          );
-
-          final exito = await authService.actualizarUsuario(
-            usuario.id,
-            usuarioActualizado,
-          );
-
-          if (context.mounted) {
-            if (exito) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Usuario actualizado exitosamente'),
-                  backgroundColor: ColoresApp.exito,
-                ),
-              );
-              Navigator.of(context).pop();
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Error al actualizar usuario'),
-                  backgroundColor: ColoresApp.error,
-                ),
-              );
-            }
-          }
-        },
-      ),
-    );
-  }
-
-  void _cambiarEstadoUsuario(BuildContext context, Usuario usuario) async {
+  Future<void> _cambiarEstadoUsuario(BuildContext context, Usuario usuario) async {
     final authService = context.read<AuthService>();
     final exito = await authService.cambiarEstadoUsuario(
       usuario.id,
@@ -425,13 +374,11 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              usuario.estaActivo
-                  ? 'Usuario desactivado'
-                  : 'Usuario activado',
-            ),
+                usuario.estaActivo ? 'Usuario desactivado' : 'Usuario activado'),
             backgroundColor: ColoresApp.exito,
           ),
         );
+        await _cargarUsuarios();
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -443,8 +390,8 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
     }
   }
 
-  void _confirmarEliminarUsuario(BuildContext context, Usuario usuario) {
-    showDialog(
+  Future<void> _confirmarEliminarUsuario(BuildContext context, Usuario usuario) async {
+    final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ColoresApp.tarjetaOscura,
@@ -458,34 +405,11 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text('Cancelar', style: TextStyle(color: ColoresApp.textoSecundario)),
           ),
           ElevatedButton(
-            onPressed: () async {
-              Navigator.of(context).pop();
-
-              final authService = context.read<AuthService>();
-              final exito = await authService.eliminarUsuario(usuario.id);
-
-              if (context.mounted) {
-                if (exito) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Usuario eliminado exitosamente'),
-                      backgroundColor: ColoresApp.exito,
-                    ),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Error al eliminar usuario'),
-                      backgroundColor: ColoresApp.error,
-                    ),
-                  );
-                }
-              }
-            },
+            onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: ColoresApp.error,
               foregroundColor: Colors.white,
@@ -495,6 +419,30 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         ],
       ),
     );
+
+    if (confirmar == true) {
+      final authService = context.read<AuthService>();
+      final exito = await authService.eliminarUsuario(usuario.id);
+
+      if (context.mounted) {
+        if (exito) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Usuario eliminado exitosamente'),
+              backgroundColor: ColoresApp.exito,
+            ),
+          );
+          await _cargarUsuarios();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Error al eliminar usuario'),
+              backgroundColor: ColoresApp.error,
+            ),
+          );
+        }
+      }
+    }
   }
 }
 

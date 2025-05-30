@@ -11,11 +11,11 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase - VERSIONES ACTUALIZADAS Y COMPATIBLES
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.16.0
-  cloud_firestore: ^4.17.5
-  firebase_storage: ^11.6.5
+  # Firebase - VERSIONES ESTABLES Y COMPATIBLES (CORREGIDAS)
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  cloud_firestore: ^4.13.6
+  firebase_storage: ^11.5.6
 
   # Manejo de estado
   provider: ^6.1.5

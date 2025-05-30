@@ -1,236 +1,225 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../servicios/database_initializer.dart';
 import '../servicios/auth_service.dart';
 import '../nucleo/constantes/colores_app.dart';
-import 'login_screen.dart';
-import 'home_screen.dart';
-import 'gestion_usuarios_screen.dart';
-import 'utilidades_admin_screen.dart';
 
-class PantallaAdmin extends StatefulWidget {
-  const PantallaAdmin({super.key});
+class PantallaUtilidadesAdmin extends StatefulWidget {
+  const PantallaUtilidadesAdmin({super.key});
 
   @override
-  State<PantallaAdmin> createState() => _PantallaAdminState();
+  State<PantallaUtilidadesAdmin> createState() => _PantallaUtilidadesAdminState();
 }
 
-class _PantallaAdminState extends State<PantallaAdmin> {
+class _PantallaUtilidadesAdminState extends State<PantallaUtilidadesAdmin> {
+  bool _cargando = false;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true, // Manejar teclado
       appBar: AppBar(
-        title: const Text('PANEL ADMINISTRADOR'),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.admin_panel_settings),
-            onPressed: () {},
-          ),
-        ],
+        title: const Text('UTILIDADES ADMIN'),
+        backgroundColor: ColoresApp.superficieOscura,
       ),
-      drawer: _construirDrawer(context),
       body: Container(
         decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0F0F0F),
-              Color(0xFF0A0A0F),
-            ],
-          ),
+          gradient: ColoresApp.gradienteFondo,
         ),
         child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header de administrador
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: ColoresApp.gradientePrimario,
-                  borderRadius: BorderRadius.circular(16),
+              const Text(
+                'CONFIGURACIÓN DE BASE DE DATOS',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.0,
                 ),
-                child: Row(
+              ),
+              const SizedBox(height: 20),
+
+              _tarjetaUtilidad(
+                'Inicializar Base de Datos',
+                'Crear todas las colecciones y datos de ejemplo',
+                Icons.storage,
+                ColoresApp.verdeAcento,
+                    () => _ejecutarAccion(
+                  'Inicializando base de datos...',
+                  DatabaseInitializer.inicializarBaseDatos,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              _tarjetaUtilidad(
+                'Verificar Datos',
+                'Revisar integridad de la base de datos',
+                Icons.fact_check,
+                ColoresApp.cyanPrimario,
+                    () => _ejecutarAccion(
+                  'Verificando datos...',
+                  DatabaseInitializer.verificarYRepararDatos,
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              _tarjetaUtilidad(
+                'Limpiar Datos Prueba',
+                'Eliminar usuarios y datos de ejemplo',
+                Icons.cleaning_services,
+                ColoresApp.advertencia,
+                    () => _confirmarYEjecutar(
+                  'Limpiar Datos',
+                  '¿Estás seguro? Esta acción eliminará usuarios de prueba.',
+                      () => DatabaseInitializer.limpiarDatosPrueba(),
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // SECCIÓN DE EMERGENCIA
+              const Text(
+                'HERRAMIENTAS DE EMERGENCIA',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 1.0,
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              _tarjetaUtilidad(
+                'LIMPIAR TODA LA BASE DE DATOS',
+                'ELIMINAR TODOS LOS USUARIOS - USA SOLO EN EMERGENCIA',
+                Icons.warning,
+                ColoresApp.error,
+                    () => _confirmarYEjecutar(
+                  'PELIGRO: Limpiar Todo',
+                  '¿ESTÁS COMPLETAMENTE SEGURO?\n\nEsto eliminará TODOS los usuarios de la base de datos.\n\nEsta acción NO se puede deshacer.\n\nSolo úsalo si hay problemas graves.',
+                      () async {
+                    final authService = context.read<AuthService>();
+                    await authService.limpiarBaseDatos();
+                  },
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              if (_cargando)
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: ColoresApp.informacion.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: ColoresApp.informacion.withOpacity(0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      CircularProgressIndicator(color: ColoresApp.informacion),
+                      SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'Procesando... Revisa la consola para ver el progreso.',
+                          style: TextStyle(color: ColoresApp.informacion),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+              const SizedBox(height: 20),
+
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ColoresApp.advertencia.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: ColoresApp.advertencia.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(
-                      Icons.admin_panel_settings,
-                      size: 40,
-                      color: Colors.white,
+                    Row(
+                      children: [
+                        Icon(Icons.warning, color: ColoresApp.advertencia),
+                        const SizedBox(width: 8),
+                        Text(
+                          'REGLAS DE FIRESTORE',
+                          style: TextStyle(
+                            color: ColoresApp.advertencia,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'PANEL DE ADMINISTRACIÓN',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Control total del sistema',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Si tienes errores de permisos, ve a Firebase Console > Firestore Database > Rules y usa estas reglas:\n\n'
+                          'rules_version = \'2\';\n'
+                          'service cloud.firestore {\n'
+                          '  match /databases/{database}/documents {\n'
+                          '    match /{document=**} {\n'
+                          '      allow read, write: if true;\n'
+                          '    }\n'
+                          '  }\n'
+                          '}',
+                      style: TextStyle(
+                        color: ColoresApp.textoSecundario,
+                        fontSize: 12,
+                        fontFamily: 'monospace',
                       ),
                     ),
                   ],
                 ),
               ),
+
               const SizedBox(height: 20),
 
-              // CONFIGURACIÓN DE APLICACIÓN
-              _seccionAdmin(
-                'CONFIGURACIÓN DE APLICACIÓN',
-                [
-                  _tarjetaAdmin(
-                    'Texto Marquee',
-                    'Configurar mensaje deslizante',
-                    Icons.text_fields,
-                    ColoresApp.cyanPrimario,
-                        () {
-                      print("Configurar texto marquee");
-                    },
-                  ),
-                  _tarjetaAdmin(
-                    'Publicidad Push',
-                    'Gestionar imagen promocional',
-                    Icons.campaign,
-                    ColoresApp.naranjaAcento,
-                        () {
-                      print("Gestionar publicidad");
-                    },
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // GESTIÓN DE CONTENIDO
-              _seccionAdmin(
-                'GESTIÓN DE CONTENIDO',
-                [
-                  _tarjetaAdmin(
-                    'Gestionar Usuarios',
-                    'Crear, editar y administrar usuarios',
-                    Icons.people,
-                    ColoresApp.verdeAcento,
-                        () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const PantallaGestionUsuarios(),
-                        ),
-                      );
-                    },
-                  ),
-                  _tarjetaAdmin(
-                    'Gestionar Figuras',
-                    'Agregar naves y dioramas',
-                    Icons.category,
-                    ColoresApp.moradoPrimario,
-                        () {
-                      print("Gestionar figuras");
-                    },
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-
-              // ESTADÍSTICAS Y MONITOREO
-              _seccionAdmin(
-                'ESTADÍSTICAS Y MONITOREO',
-                [
-                  _tarjetaAdmin(
-                    'Estadísticas',
-                    'Ver uso de la aplicación',
-                    Icons.analytics,
-                    ColoresApp.azulPrimario,
-                        () {
-                      print("Ver estadísticas");
-                    },
-                  ),
-                  _tarjetaAdmin(
-                    'Utilidades Admin',
-                    'Configuración y herramientas',
-                    Icons.build,
-                    ColoresApp.rojoAcento,
-                        () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const PantallaUtilidadesAdmin(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // Sección final más compacta
+              // Información sobre el problema de Firebase
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: ColoresApp.informacion.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: ColoresApp.informacion.withOpacity(0.3)),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.swap_horiz,
-                      color: ColoresApp.informacion,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Modo Usuario',
-                        style: TextStyle(
-                          color: ColoresApp.informacion,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
+                    Row(
+                      children: [
+                        Icon(Icons.info, color: ColoresApp.informacion),
+                        const SizedBox(width: 8),
+                        Text(
+                          'SOLUCIÓN AL ERROR DE CAST',
+                          style: TextStyle(
+                            color: ColoresApp.informacion,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => const PantallaHome()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColoresApp.informacion,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        minimumSize: const Size(60, 30),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Si sigues teniendo el error "type \'List<Object?>\' is not a subtype of type \'PigeonUserDetails?\'", usa la limpieza de emergencia arriba.\n\n'
+                          'Pasos recomendados:\n'
+                          '1. Usar "LIMPIAR TODA LA BASE DE DATOS"\n'
+                          '2. Reiniciar la aplicación\n'
+                          '3. Crear usuarios nuevos\n'
+                          '4. El problema debería estar resuelto',
+                      style: TextStyle(
+                        color: ColoresApp.textoSecundario,
+                        fontSize: 12,
                       ),
-                      child: const Text('Ver', style: TextStyle(fontSize: 11)),
                     ),
                   ],
                 ),
               ),
-
-              // Espaciado final para evitar que el último elemento toque el bottom
-              const SizedBox(height: 20),
             ],
           ),
         ),
@@ -238,212 +227,17 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     );
   }
 
-  Widget _construirDrawer(BuildContext context) {
-    return Drawer(
-      backgroundColor: const Color(0xFF1A1A1A),
-      child: Column(
-        children: [
-          // Header del drawer
-          Container(
-            height: 200,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFFEF4444), // Rojo para admin
-                  Color(0xFFF59E0B), // Naranja para admin
-                ],
-              ),
-            ),
-            child: const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.admin_panel_settings,
-                    size: 60,
-                    color: Colors.white,
-                  ),
-                  SizedBox(height: 16),
-                  Text(
-                    'ADMINISTRADOR',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  Text(
-                    'Panel de Control',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // Items del menú
-          Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _itemDrawer(
-                  context,
-                  Icons.dashboard,
-                  'PANEL PRINCIPAL',
-                      () {
-                    Navigator.pop(context);
-                    print("Ya estás en el panel principal");
-                  },
-                ),
-                _itemDrawer(
-                  context,
-                  Icons.people,
-                  'USUARIOS',
-                      () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const PantallaGestionUsuarios(),
-                      ),
-                    );
-                  },
-                ),
-                _itemDrawer(
-                  context,
-                  Icons.category,
-                  'FIGURAS',
-                      () {
-                    Navigator.pop(context);
-                    print("Navegando a gestión de figuras");
-                  },
-                ),
-                _itemDrawer(
-                  context,
-                  Icons.settings,
-                  'CONFIGURACIÓN',
-                      () {
-                    Navigator.pop(context);
-                    print("Navegando a configuración");
-                  },
-                ),
-                const Divider(color: Color(0xFF404040)),
-                _itemDrawer(
-                  context,
-                  Icons.person,
-                  'MODO USUARIO',
-                      () {
-                    Navigator.pop(context);
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (context) => const PantallaHome()),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          // Footer con cerrar sesión
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: _itemDrawer(
-              context,
-              Icons.exit_to_app,
-              'CERRAR SESIÓN',
-                  () async {
-                Navigator.pop(context);
-                await context.read<AuthService>().cerrarSesion();
-                if (mounted) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const PantallaLogin()),
-                  );
-                }
-              },
-              esLogout: true,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _itemDrawer(BuildContext context, IconData icono, String titulo, VoidCallback onTap, {bool esLogout = false}) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.transparent,
-      ),
-      child: ListTile(
-        leading: Icon(
-          icono,
-          color: esLogout ? Colors.red : Colors.orange,
-          size: 24,
-        ),
-        title: Text(
-          titulo,
-          style: TextStyle(
-            color: esLogout ? Colors.red : Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-        onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        hoverColor: Colors.orange.withOpacity(0.1),
-        splashColor: Colors.orange.withOpacity(0.2),
-      ),
-    );
-  }
-
-  Widget _seccionAdmin(String titulo, List<Widget> tarjetas) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          titulo,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-        const SizedBox(height: 12),
-        // Usar Column y Row en lugar de GridView para mejor control
-        for (int i = 0; i < tarjetas.length; i += 2)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: Row(
-              children: [
-                Expanded(child: tarjetas[i]),
-                const SizedBox(width: 12),
-                if (i + 1 < tarjetas.length)
-                  Expanded(child: tarjetas[i + 1])
-                else
-                  const Expanded(child: SizedBox()),
-              ],
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _tarjetaAdmin(String titulo, String descripcion, IconData icono, Color color, VoidCallback onTap) {
+  Widget _tarjetaUtilidad(
+      String titulo,
+      String descripcion,
+      IconData icono,
+      Color color,
+      VoidCallback onTap,
+      ) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: _cargando ? null : onTap,
       child: Container(
-        height: 100, // Altura fija para evitar overflow
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: ColoresApp.tarjetaOscura,
           borderRadius: BorderRadius.circular(16),
@@ -456,48 +250,120 @@ class _PantallaAdminState extends State<PantallaAdmin> {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                icono,
-                size: 20,
-                color: color,
-              ),
+              child: Icon(icono, color: color, size: 24),
             ),
-            const SizedBox(height: 8),
-            Text(
-              titulo,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
+            const SizedBox(width: 16),
             Expanded(
-              child: Text(
-                descripcion,
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 10,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    titulo,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    descripcion,
+                    style: const TextStyle(
+                      color: Colors.grey,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
               ),
             ),
+            if (_cargando)
+              const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            else
+              Icon(Icons.arrow_forward_ios, color: color, size: 16),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _ejecutarAccion(String mensaje, Future<void> Function() accion) async {
+    setState(() => _cargando = true);
+
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(mensaje),
+          backgroundColor: ColoresApp.informacion,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      await accion();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('¡Operación completada exitosamente!'),
+            backgroundColor: ColoresApp.exito,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: ColoresApp.error,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _cargando = false);
+      }
+    }
+  }
+
+  Future<void> _confirmarYEjecutar(
+      String titulo,
+      String mensaje,
+      Future<void> Function() accion,
+      ) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: Text(titulo, style: const TextStyle(color: Colors.white)),
+        content: Text(mensaje, style: const TextStyle(color: ColoresApp.textoSecundario)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: ColoresApp.textoSecundario)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.error),
+            child: const Text('Confirmar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      await _ejecutarAccion('Ejecutando...', accion);
+    }
   }
 }
