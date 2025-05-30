@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../servicios/auth_service.dart';
 import '../nucleo/constantes/colores_app.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
@@ -353,7 +351,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
             ),
           ),
 
-          // Footer con cerrar sesión
+          // Footer con cerrar sesión SIMPLE
           Container(
             padding: const EdgeInsets.all(16),
             child: _itemDrawer(
@@ -361,12 +359,68 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               Icons.exit_to_app,
               'CERRAR SESIÓN',
                   () async {
-                Navigator.pop(context);
-                await context.read<AuthService>().cerrarSesion();
-                if (mounted) {
-                  Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                Navigator.pop(context); // Cerrar drawer
+
+                // Mostrar confirmación simple
+                final confirmar = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    backgroundColor: const Color(0xFF252525),
+                    title: const Text(
+                      'Cerrar Sesión Administrativa',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                    content: const Text(
+                      '¿Estás seguro de que quieres cerrar la sesión de administrador?',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text(
+                          'Cancelar',
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                        ),
+                        child: const Text('Cerrar Sesión'),
+                      ),
+                    ],
+                  ),
+                );
+
+                // Si confirma, ir al login
+                if (confirmar == true && mounted) {
+                  // Mostrar mensaje de despedida
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Row(
+                        children: [
+                          Icon(Icons.check_circle, color: Colors.white, size: 20),
+                          SizedBox(width: 8),
+                          Text('Sesión administrativa cerrada'),
+                        ],
+                      ),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 1),
+                    ),
                   );
+
+                  // Pequeña pausa para mostrar el mensaje
+                  await Future.delayed(const Duration(milliseconds: 500));
+
+                  // Navegar a login limpiando toda la pila de navegación
+                  if (mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                          (route) => false,
+                    );
+                  }
                 }
               },
               esLogout: true,
