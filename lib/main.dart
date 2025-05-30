@@ -1,6 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  // Asegurar que Flutter esté inicializado
+  WidgetsFlutterBinding.ensureInitialized();
+
+  try {
+    // Inicializar Firebase
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print("Firebase inicializado correctamente");
+  } catch (e) {
+    print("Error inicializando Firebase: $e");
+    // Continuar sin Firebase por ahora
+  }
+
   runApp(const AplicacionPrincipal());
 }
 
@@ -116,7 +132,9 @@ class PantallaPrueba extends StatelessWidget {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        print("Botón CONECTAR presionado");
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
@@ -128,7 +146,9 @@ class PantallaPrueba extends StatelessWidget {
                   const SizedBox(width: 16),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        print("Botón CANCELAR presionado");
+                      },
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.cyan,
                         side: const BorderSide(color: Colors.cyan),
@@ -207,7 +227,7 @@ class PantallaPrueba extends StatelessWidget {
                   'INICIO',
                       () {
                     Navigator.pop(context);
-                    // Navegar a inicio
+                    print("Navegando a INICIO");
                   },
                 ),
                 _itemDrawer(
@@ -216,7 +236,7 @@ class PantallaPrueba extends StatelessWidget {
                   'NAVES',
                       () {
                     Navigator.pop(context);
-                    // Navegar a naves
+                    print("Navegando a NAVES");
                   },
                 ),
                 _itemDrawer(
@@ -225,7 +245,7 @@ class PantallaPrueba extends StatelessWidget {
                   'DIORAMAS',
                       () {
                     Navigator.pop(context);
-                    // Navegar a dioramas
+                    print("Navegando a DIORAMAS");
                   },
                 ),
                 const Divider(color: Color(0xFF404040)),
@@ -235,7 +255,7 @@ class PantallaPrueba extends StatelessWidget {
                   'ADMINISTRADOR',
                       () {
                     Navigator.pop(context);
-                    // Navegar a admin
+                    print("Navegando a ADMINISTRADOR");
                   },
                 ),
               ],
@@ -251,7 +271,7 @@ class PantallaPrueba extends StatelessWidget {
               'CERRAR SESIÓN',
                   () {
                 Navigator.pop(context);
-                // Cerrar sesión
+                print("Cerrando sesión");
               },
               esLogout: true,
             ),
