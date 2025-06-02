@@ -147,6 +147,7 @@ class DatabaseInitializer {
   }
 
   /// Crear configuración de la aplicación
+  /// Crear configuración de la aplicación
   static Future<void> _crearConfiguracionApp() async {
     print('⚙️ Creando configuración de aplicación...');
 
@@ -154,10 +155,10 @@ class DatabaseInitializer {
       final configDoc = await _firestore.collection('configuraciones').doc('app').get();
 
       if (!configDoc.exists) {
+        // CORREGIDO: Usar el constructor correcto de ConfiguracionApp
         final config = ConfiguracionApp(
           textoMarquee: '¡Bienvenidos a Naboo Customs! Controla tus figuras futuristas 🚀',
-          imagenPublicidad: '',
-          mostrarPublicidad: false,
+          publicidadPush: PublicidadPush.vacia(), // Usar PublicidadPush en lugar de imagenPublicidad
           fechaActualizacion: DateTime.now(),
         );
 

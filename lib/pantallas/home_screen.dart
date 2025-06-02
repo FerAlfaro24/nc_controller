@@ -31,7 +31,8 @@ class _PantallaHomeState extends State<PantallaHome> {
 
         // Escuchar la configuración para obtener la publicidad
         firebaseService.obtenerConfiguracion().listen((config) {
-          if (mounted && !_publicidadMostrada && config.publicidadPush.deberíaMostrarse) {
+          // CORREGIDO: Cambié deberíaMostrarse por deberiaMostrarse
+          if (mounted && !_publicidadMostrada && config.publicidadPush.deberiaMostrarse) {
             _publicidadMostrada = true;
             PublicidadPushModal.mostrar(context, config.publicidadPush);
           }

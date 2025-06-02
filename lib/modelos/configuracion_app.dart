@@ -115,7 +115,8 @@ class PublicidadPush {
     return DateTime.now().isAfter(fechaExpiracion!);
   }
 
-  bool get deberíaMostrarse => activa && !estaExpirada;
+  // CORREGIDO: Cambié deberíaMostrarse por deberiaMostrarse (sin tilde)
+  bool get deberiaMostrarse => activa && !estaExpirada;
 
   PublicidadPush copiarCon({
     bool? activa,

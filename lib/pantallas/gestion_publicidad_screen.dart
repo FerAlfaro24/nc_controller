@@ -515,55 +515,54 @@ class _PantallaGestionPublicidadState extends State<PantallaGestionPublicidad> {
         border: Border.all(color: ColoresApp.bordeGris),
       ),
       child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-      const Row(
-      children: [
-      Icon(Icons.schedule, color: ColoresApp.cyanPrimario),
-      SizedBox(width: 8),
-      Text(
-        'Fecha de Expiración (Opcional)',
-        style: TextStyle(
-          color: ColoresApp.textoPrimario,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      ],
-    ),
-    const SizedBox(height: 16),
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.schedule, color: ColoresApp.cyanPrimario),
+              SizedBox(width: 8),
+              Text(
+                'Fecha de Expiración (Opcional)',
+                style: TextStyle(
+                  color: ColoresApp.textoPrimario,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
 
-    Row(
-    children: [
-    Expanded(
-    child: Text(
-    _fechaExpiracion != null
-    ? 'Expira: ${_fechaExpiracion!.day}/${_fechaExpiracion!.month}/${_fechaExpiracion!.year}'
-        : 'Sin fecha de expiración',
-    style: const TextStyle(color: ColoresApp.textoSecundario),
-    ),
-    ),
-    if (_fechaExpiracion != null)
-    TextButton.icon(
-    onPressed: () => setState(() => _fecha
-    onPressed: () => setState(() => _fechaExpiracion = null),
-    icon: const Icon(Icons.clear, size: 18),
-    label: const Text('Quitar'),
-    style: TextButton.styleFrom(foregroundColor: ColoresApp.error),
-    ),
-    ElevatedButton.icon(
-    onPressed: _seleccionarFechaExpiracion,
-    icon: const Icon(Icons.calendar_today, size: 18),
-    label: Text(_fechaExpiracion != null ? 'Cambiar' : 'Seleccionar'),
-    style: ElevatedButton.styleFrom(
-    backgroundColor: ColoresApp.cyanPrimario,
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    ),
-    ),
-    ],
-    ),
-    ],
-    ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _fechaExpiracion != null
+                      ? 'Expira: ${_fechaExpiracion!.day}/${_fechaExpiracion!.month}/${_fechaExpiracion!.year}'
+                      : 'Sin fecha de expiración',
+                  style: const TextStyle(color: ColoresApp.textoSecundario),
+                ),
+              ),
+              if (_fechaExpiracion != null)
+                TextButton.icon(
+                  onPressed: () => setState(() => _fechaExpiracion = null),
+                  icon: const Icon(Icons.clear, size: 18),
+                  label: const Text('Quitar'),
+                  style: TextButton.styleFrom(foregroundColor: ColoresApp.error),
+                ),
+              ElevatedButton.icon(
+                onPressed: _seleccionarFechaExpiracion,
+                icon: const Icon(Icons.calendar_today, size: 18),
+                label: Text(_fechaExpiracion != null ? 'Cambiar' : 'Seleccionar'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ColoresApp.cyanPrimario,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

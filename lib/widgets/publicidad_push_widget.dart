@@ -16,7 +16,7 @@ class PublicidadPushWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (!publicidad.deberíaMostrarse) {
+    if (!publicidad.deberiaMostrarse) {
       return const SizedBox.shrink();
     }
 

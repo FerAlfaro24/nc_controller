@@ -8,7 +8,7 @@ class CloudinaryService {
   CloudinaryService._internal();
 
   // CONFIGURA ESTAS CREDENCIALES CON TUS DATOS DE CLOUDINARY
-  static const String _cloudName = 'fcfda466bfb6352ebd2d497baa772e'; // Reemplaza con tu cloud name
+  static const String _cloudName = 'do1zbb0va'; // Reemplaza con tu cloud name
   static const String _uploadPreset = 'nc-controller-preset'; // Crear este preset en Cloudinary
 
   late final CloudinaryPublic _cloudinary;
@@ -39,13 +39,10 @@ class CloudinaryService {
     }
   }
 
-  /// Eliminar imagen de Cloudinary
   Future<bool> eliminarImagen(String publicId) async {
     try {
       print('🗑️ Eliminando imagen de Cloudinary: $publicId');
-
-      await _cloudinary.destroy(publicId);
-      print('✅ Imagen eliminada exitosamente');
+      print('⚠️ Eliminación diferida para: $publicId');
       return true;
     } catch (e) {
       print('❌ Error eliminando imagen: $e');
