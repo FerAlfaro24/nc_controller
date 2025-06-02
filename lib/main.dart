@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:provider/provider.dart';
 import 'firebase_options.dart';
 import 'nucleo/tema/tema_app.dart';
 import 'servicios/auth_service.dart';
@@ -48,20 +47,20 @@ class AplicacionPrincipal extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: TemaApp.temaOscuro,
 
-      // CLAVE: Usar una pantalla inicial que maneje la inicialización
+      // DIRECTO A LOGIN SIN PROVIDER
       home: const AppInitializer(),
 
-      // Configurar manejo de errores personalizado
+      // Configurar manejo de errores personalizado MEJORADO
       builder: (context, widget) {
         ErrorWidget.builder = (FlutterErrorDetails errorDetails) {
-          return _buildErrorWidget(errorDetails);
+          return _buildErrorWidget(context, errorDetails);
         };
         return widget!;
       },
     );
   }
 
-  Widget _buildErrorWidget(FlutterErrorDetails errorDetails) {
+  Widget _buildErrorWidget(BuildContext context, FlutterErrorDetails errorDetails) {
     return Scaffold(
       backgroundColor: const Color(0xFF0F0F0F),
       body: SafeArea(
@@ -96,8 +95,20 @@ class AplicacionPrincipal extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
 
+                Text(
+                  'Error: ${errorDetails.exception.toString()}',
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+
                 const Text(
-                  'La aplicación encontró un problema y necesita reiniciarse.',
+                  'La aplicación encontró un problema. Intenta reiniciarla.',
                   style: TextStyle(
                     color: Colors.grey,
                     fontSize: 14,
@@ -108,8 +119,11 @@ class AplicacionPrincipal extends StatelessWidget {
 
                 ElevatedButton(
                   onPressed: () {
-                    // Forzar reinicio completo
-                    main();
+                    // Navegar a login como recuperación
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const AppInitializer()),
+                          (route) => false,
+                    );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF06B6D4),
@@ -129,7 +143,7 @@ class AplicacionPrincipal extends StatelessWidget {
   }
 }
 
-// Nueva clase que maneja la inicialización paso a paso
+// Clase SIMPLIFICADA que maneja la inicialización SIN PROVIDER
 class AppInitializer extends StatefulWidget {
   const AppInitializer({super.key});
 
@@ -140,8 +154,8 @@ class AppInitializer extends StatefulWidget {
 class _AppInitializerState extends State<AppInitializer> {
   bool _isInitialized = false;
   String _initStatus = 'Iniciando...';
-  AuthService? _authService;
-  FirebaseService? _firebaseService;
+  bool _hasError = false;
+  String _errorMessage = '';
 
   @override
   void initState() {
@@ -151,52 +165,153 @@ class _AppInitializerState extends State<AppInitializer> {
 
   Future<void> _initializeApp() async {
     try {
-      setState(() => _initStatus = 'Configurando servicios...');
+      setState(() {
+        _initStatus = 'Configurando servicios...';
+        _hasError = false;
+        _errorMessage = '';
+      });
 
       // Pequeña pausa para asegurar que Flutter esté completamente listo
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Inicializar servicios de manera segura
-      _authService = AuthService();
-      await Future.delayed(const Duration(milliseconds: 100));
+      // Inicializar servicios de manera segura DIRECTAMENTE
+      print("🔧 Inicializando AuthService...");
+      final authService = AuthService();
+      await Future.delayed(const Duration(milliseconds: 200));
 
-      _firebaseService = FirebaseService();
-      await Future.delayed(const Duration(milliseconds: 100));
+      print("🔧 Inicializando FirebaseService...");
+      final firebaseService = FirebaseService();
+      await Future.delayed(const Duration(milliseconds: 200));
 
       setState(() => _initStatus = 'Verificando conexión...');
 
       // Verificar que los servicios funcionen
-      bool connectionOk = await _firebaseService!.verificarConexion();
+      bool connectionOk = await firebaseService.verificarConexion();
       print("🔗 Conexión Firebase: ${connectionOk ? 'OK' : 'FALLO'}");
+
+      if (!connectionOk) {
+        throw Exception('No se pudo conectar a Firebase');
+      }
 
       setState(() => _initStatus = 'Listo!');
       await Future.delayed(const Duration(milliseconds: 300));
 
-      setState(() => _isInitialized = true);
+      if (mounted) {
+        setState(() => _isInitialized = true);
+      }
 
     } catch (e) {
       print("❌ Error en inicialización: $e");
-      setState(() => _initStatus = 'Error: $e');
 
-      // Reintentar después de un delay
-      await Future.delayed(const Duration(seconds: 2));
-      _initializeApp();
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = e.toString();
+          _initStatus = 'Error: $e';
+        });
+
+        // Reintentar después de un delay
+        Timer(const Duration(seconds: 3), () {
+          if (mounted && _hasError) {
+            _initializeApp();
+          }
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_hasError) {
+      return _buildErrorScreen();
+    }
+
     if (!_isInitialized) {
       return _buildLoadingScreen();
     }
 
-    // Una vez inicializado, crear el Provider tree
-    return MultiProvider(
-      providers: [
-        Provider<AuthService>.value(value: _authService!),
-        Provider<FirebaseService>.value(value: _firebaseService!),
-      ],
-      child: const PantallaLogin(),
+    // Una vez inicializado, ir DIRECTO AL LOGIN SIN PROVIDER
+    return const PantallaLogin();
+  }
+
+  Widget _buildErrorScreen() {
+    return Scaffold(
+      backgroundColor: const Color(0xFF0F0F0F),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.red.withOpacity(0.2),
+                  ),
+                  child: const Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: Colors.red,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                const Text(
+                  'ERROR DE INICIALIZACIÓN',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+
+                Text(
+                  _errorMessage,
+                  style: const TextStyle(
+                    color: Colors.grey,
+                    fontSize: 12,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 8),
+
+                const Text(
+                  'Reintentando automáticamente...',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.red),
+                ),
+                const SizedBox(height: 16),
+
+                ElevatedButton(
+                  onPressed: () => _initializeApp(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF06B6D4),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  ),
+                  child: const Text(
+                    'REINTENTAR',
+                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

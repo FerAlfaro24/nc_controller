@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../servicios/auth_service.dart';
 import '../modelos/usuario.dart';
 import '../nucleo/constantes/colores_app.dart';
@@ -17,6 +16,9 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
   List<Usuario> _usuarios = [];
   bool _cargando = false;
 
+  // CREAR INSTANCIA DIRECTA SIN PROVIDER
+  final AuthService _authService = AuthService();
+
   @override
   void initState() {
     super.initState();
@@ -30,17 +32,23 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
   }
 
   Future<void> _cargarUsuarios() async {
+    print('📋 Iniciando carga de usuarios...');
     setState(() => _cargando = true);
+
     try {
-      final authService = context.read<AuthService>();
-      final usuarios = await authService.cargarUsuariosManuales();
-      setState(() {
-        _usuarios = usuarios;
-        _cargando = false;
-      });
-    } catch (e) {
-      setState(() => _cargando = false);
+      final usuarios = await _authService.cargarUsuariosManuales();
+      print('✅ Usuarios obtenidos: ${usuarios.length}');
+
       if (mounted) {
+        setState(() {
+          _usuarios = usuarios;
+          _cargando = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error cargando usuarios: $e');
+      if (mounted) {
+        setState(() => _cargando = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error cargando usuarios: $e'),
@@ -65,7 +73,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
           ),
           IconButton(
             icon: const Icon(Icons.person_add, color: ColoresApp.cyanPrimario),
-            onPressed: () => _mostrarDialogoCrearUsuario(context),
+            onPressed: _mostrarDialogoCrearUsuario,
           ),
         ],
       ),
@@ -100,11 +108,49 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
               ),
             ),
 
+            // Información de debug
+            if (_cargando)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Cargando usuarios desde Firestore...',
+                  style: TextStyle(color: ColoresApp.textoSecundario),
+                ),
+              ),
+
+            if (!_cargando && _usuarios.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Total usuarios encontrados: ${_usuarios.length}',
+                  style: const TextStyle(color: ColoresApp.textoSecundario),
+                ),
+              ),
+
+            if (!_cargando && _usuarios.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'Mostrando ${_usuarios.length} usuarios',
+                  style: const TextStyle(color: ColoresApp.verdeAcento),
+                ),
+              ),
+
             // Lista de usuarios
             Expanded(
               child: _cargando
                   ? const Center(
-                child: CircularProgressIndicator(color: ColoresApp.cyanPrimario),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: ColoresApp.cyanPrimario),
+                    SizedBox(height: 16),
+                    Text(
+                      'Cargando usuarios...',
+                      style: TextStyle(color: ColoresApp.textoSecundario),
+                    ),
+                  ],
+                ),
               )
                   : _construirListaUsuarios(),
             ),
@@ -112,7 +158,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _mostrarDialogoCrearUsuario(context),
+        onPressed: _mostrarDialogoCrearUsuario,
         backgroundColor: ColoresApp.cyanPrimario,
         child: const Icon(Icons.person_add, color: Colors.white),
       ),
@@ -123,7 +169,7 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
     final usuariosFiltrados = _usuarios.where((usuario) {
       if (_terminoBusqueda.isEmpty) return true;
       return usuario.nombre.toLowerCase().contains(_terminoBusqueda) ||
-          usuario.email.split('@')[0].toLowerCase().contains(_terminoBusqueda); // Buscar por usuario también
+          usuario.email.split('@')[0].toLowerCase().contains(_terminoBusqueda);
     }).toList();
 
     if (usuariosFiltrados.isEmpty) {
@@ -155,6 +201,15 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
               ),
               child: const Text('Recargar'),
             ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _mostrarDialogoCrearUsuario,
+              icon: const Icon(Icons.person_add),
+              label: const Text('Crear Primer Usuario'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ColoresApp.verdeAcento,
+              ),
+            ),
           ],
         ),
       );
@@ -165,13 +220,12 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
       itemCount: usuariosFiltrados.length,
       itemBuilder: (context, index) {
         final usuario = usuariosFiltrados[index];
-        return _construirTarjetaUsuario(context, usuario);
+        return _construirTarjetaUsuario(usuario);
       },
     );
   }
 
-  Widget _construirTarjetaUsuario(BuildContext context, Usuario usuario) {
-    // Extraer el nombre de usuario del email
+  Widget _construirTarjetaUsuario(Usuario usuario) {
     String nombreUsuario = usuario.email.split('@')[0];
 
     return Container(
@@ -208,7 +262,6 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Nombre completo
                   Text(
                     usuario.nombre,
                     style: const TextStyle(
@@ -219,7 +272,6 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
                     overflow: TextOverflow.ellipsis,
                   ),
                   const SizedBox(height: 2),
-                  // Usuario (sin @naboocustoms.local)
                   Text(
                     '@$nombreUsuario',
                     style: const TextStyle(
@@ -293,10 +345,10 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
           onSelected: (value) async {
             switch (value) {
               case 'toggle_estado':
-                await _cambiarEstadoUsuario(context, usuario);
+                await _cambiarEstadoUsuario(usuario);
                 break;
               case 'eliminar':
-                await _confirmarEliminarUsuario(context, usuario);
+                await _confirmarEliminarUsuario(usuario);
                 break;
             }
           },
@@ -334,31 +386,34 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
     );
   }
 
-  void _mostrarDialogoCrearUsuario(BuildContext context) {
+  void _mostrarDialogoCrearUsuario() {
     showDialog(
       context: context,
-      builder: (context) => _DialogoUsuario(
+      builder: (dialogContext) => _DialogoUsuario(
         titulo: 'Crear Usuario',
         onGuardar: (usuario, nombre, password, rol) async {
-          final authService = context.read<AuthService>();
-          final resultado = await authService.crearUsuario(
+          print('🔧 Creando usuario: $usuario');
+
+          final resultado = await _authService.crearUsuario(
             usuario: usuario,
             nombre: nombre,
             password: password,
             rol: rol,
           );
 
-          if (context.mounted) {
+          if (mounted) {
             if (resultado.exitoso) {
+              print('✅ Usuario creado exitosamente');
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Usuario creado exitosamente'),
                   backgroundColor: ColoresApp.exito,
                 ),
               );
-              Navigator.of(context).pop();
+              Navigator.of(dialogContext).pop();
               await _cargarUsuarios();
             } else {
+              print('❌ Error creando usuario: ${resultado.error}');
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(resultado.error ?? 'Error desconocido'),
@@ -372,14 +427,13 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
     );
   }
 
-  Future<void> _cambiarEstadoUsuario(BuildContext context, Usuario usuario) async {
-    final authService = context.read<AuthService>();
-    final exito = await authService.cambiarEstadoUsuario(
+  Future<void> _cambiarEstadoUsuario(Usuario usuario) async {
+    final exito = await _authService.cambiarEstadoUsuario(
       usuario.id,
       !usuario.estaActivo,
     );
 
-    if (context.mounted) {
+    if (mounted) {
       if (exito) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -400,12 +454,12 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
     }
   }
 
-  Future<void> _confirmarEliminarUsuario(BuildContext context, Usuario usuario) async {
+  Future<void> _confirmarEliminarUsuario(Usuario usuario) async {
     String nombreUsuario = usuario.email.split('@')[0];
 
     final confirmar = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: ColoresApp.tarjetaOscura,
         title: const Text(
           'Confirmar Eliminación',
@@ -417,11 +471,11 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
             child: const Text('Cancelar', style: TextStyle(color: ColoresApp.textoSecundario)),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
             style: ElevatedButton.styleFrom(
               backgroundColor: ColoresApp.error,
               foregroundColor: Colors.white,
@@ -433,10 +487,9 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
     );
 
     if (confirmar == true) {
-      final authService = context.read<AuthService>();
-      final exito = await authService.eliminarUsuario(usuario.id);
+      final exito = await _authService.eliminarUsuario(usuario.id);
 
-      if (context.mounted) {
+      if (mounted) {
         if (exito) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -460,12 +513,10 @@ class _PantallaGestionUsuariosState extends State<PantallaGestionUsuarios> {
 
 class _DialogoUsuario extends StatefulWidget {
   final String titulo;
-  final Usuario? usuario;
   final Function(String usuario, String nombre, String password, String rol) onGuardar;
 
   const _DialogoUsuario({
     required this.titulo,
-    this.usuario,
     required this.onGuardar,
   });
 
@@ -482,16 +533,6 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
   bool _mostrarPassword = false;
 
   @override
-  void initState() {
-    super.initState();
-    if (widget.usuario != null) {
-      _usuarioController.text = widget.usuario!.email.split('@')[0]; // Extraer usuario del email
-      _nombreController.text = widget.usuario!.nombre;
-      _rolSeleccionado = widget.usuario!.rol;
-    }
-  }
-
-  @override
   void dispose() {
     _usuarioController.dispose();
     _nombreController.dispose();
@@ -501,8 +542,6 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
 
   @override
   Widget build(BuildContext context) {
-    final esEdicion = widget.usuario != null;
-
     return AlertDialog(
       backgroundColor: ColoresApp.tarjetaOscura,
       title: Text(
@@ -515,7 +554,6 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Campo Usuario
               TextFormField(
                 controller: _usuarioController,
                 style: const TextStyle(color: ColoresApp.textoPrimario),
@@ -531,15 +569,10 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
                   if (value.length < 3) {
                     return 'El usuario debe tener al menos 3 caracteres';
                   }
-                  if (!RegExp(r'^[a-zA-Z0-9._-]+$').hasMatch(value)) {
-                    return 'Solo letras, números, puntos, guiones y guiones bajos';
-                  }
                   return null;
                 },
               ),
               const SizedBox(height: 16),
-
-              // Campo Nombre
               TextFormField(
                 controller: _nombreController,
                 style: const TextStyle(color: ColoresApp.textoPrimario),
@@ -555,38 +588,32 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
                 },
               ),
               const SizedBox(height: 16),
-
-              // Campo Contraseña (solo para crear)
-              if (!esEdicion) ...[
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: !_mostrarPassword,
-                  style: const TextStyle(color: ColoresApp.textoPrimario),
-                  decoration: InputDecoration(
-                    labelText: 'Contraseña',
-                    prefixIcon: const Icon(Icons.lock, color: ColoresApp.cyanPrimario),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _mostrarPassword ? Icons.visibility : Icons.visibility_off,
-                        color: ColoresApp.textoSecundario,
-                      ),
-                      onPressed: () => setState(() => _mostrarPassword = !_mostrarPassword),
+              TextFormField(
+                controller: _passwordController,
+                obscureText: !_mostrarPassword,
+                style: const TextStyle(color: ColoresApp.textoPrimario),
+                decoration: InputDecoration(
+                  labelText: 'Contraseña',
+                  prefixIcon: const Icon(Icons.lock, color: ColoresApp.cyanPrimario),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _mostrarPassword ? Icons.visibility : Icons.visibility_off,
+                      color: ColoresApp.textoSecundario,
                     ),
+                    onPressed: () => setState(() => _mostrarPassword = !_mostrarPassword),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Por favor ingresa una contraseña';
-                    }
-                    if (value.length < 4) {
-                      return 'La contraseña debe tener al menos 4 caracteres';
-                    }
-                    return null;
-                  },
                 ),
-                const SizedBox(height: 16),
-              ],
-
-              // Selector de rol
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Por favor ingresa una contraseña';
+                  }
+                  if (value.length < 4) {
+                    return 'La contraseña debe tener al menos 4 caracteres';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _rolSeleccionado,
                 style: const TextStyle(color: ColoresApp.textoPrimario),
@@ -633,7 +660,7 @@ class _DialogoUsuarioState extends State<_DialogoUsuario> {
             backgroundColor: ColoresApp.cyanPrimario,
             foregroundColor: Colors.white,
           ),
-          child: Text(esEdicion ? 'Actualizar' : 'Crear'),
+          child: const Text('Crear'),
         ),
       ],
     );

@@ -6,7 +6,6 @@ class AuthService {
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
 
-  // AQUÍ VA EL CONSTRUCTOR CORREGIDO 👇
   AuthService._internal() {
     print("🔧 AuthService inicializado");
     _inicializarServicio();
@@ -15,16 +14,13 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // NUEVA VARIABLE PARA CONTROLAR INICIALIZACIÓN 👇
   bool _inicializado = false;
 
-  // NUEVO MÉTODO PARA INICIALIZAR DE FORMA SEGURA 👇
   void _inicializarServicio() {
     if (!_inicializado) {
       print("🔧 Configurando listeners de AuthService");
       _inicializado = true;
 
-      // Configurar listeners aquí si es necesario
       _auth.authStateChanges().listen((User? user) {
         print("🔐 Estado de autenticación cambió: ${user?.email ?? 'Sin usuario'}");
       }).onError((error) {
@@ -39,19 +35,13 @@ class AuthService {
   static const String _userUser = 'usuario';
   static const String _userPassword = '1234';
 
-  // Stream del usuario actual
   Stream<User?> get usuarioStream => _auth.authStateChanges();
-
-  // Usuario actual
   User? get usuarioActual => _auth.currentUser;
 
-  // ==================== AUTENTICACIÓN ====================
-
-  /// Iniciar sesión con usuario y contraseña (sin email)
+  /// Iniciar sesión con usuario y contraseña
   Future<ResultadoAuth> iniciarSesion(String usuario, String password) async {
     try {
       String usuarioLimpio = usuario.trim().toLowerCase();
-
       print('🔐 Iniciando sesión para: $usuarioLimpio');
 
       // Verificar credenciales hardcodeadas PRIMERO
@@ -75,7 +65,7 @@ class AuthService {
     }
   }
 
-  /// Login buscando en Firestore directamente
+  /// Login buscando en Firestore directamente (SIN Firebase Auth)
   Future<ResultadoAuth> _loginFirestore(String usuario, String password) async {
     try {
       print('🔍 Buscando usuario en Firestore: $usuario');
@@ -95,20 +85,16 @@ class AuthService {
       DocumentSnapshot doc = query.docs.first;
       Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
 
-      // Verificar contraseña (en un sistema real sería hasheada)
+      // Verificar contraseña
       String passwordGuardada = data['password'] ?? '';
       if (passwordGuardada != password) {
         return ResultadoAuth.error('Contraseña incorrecta');
       }
 
-      // Crear sesión de Firebase Auth temporal
-      String emailTemporal = '${usuario}@naboocustoms.local';
-      await _crearSesionFirebaseAuth(emailTemporal, password);
-
-      // Crear objeto usuario
+      // Crear objeto usuario SIN crear sesión en Firebase Auth
       Usuario usuarioObj = Usuario(
         id: doc.id,
-        email: emailTemporal, // Email temporal para Firebase
+        email: '${usuario}@naboocustoms.local', // Email local
         nombre: data['nombre'] ?? usuario,
         rol: data['rol'] ?? 'cliente',
         activo: data['activo'] ?? true,
@@ -124,34 +110,15 @@ class AuthService {
     }
   }
 
-  /// Crear sesión en Firebase Auth de forma temporal
-  Future<void> _crearSesionFirebaseAuth(String email, String password) async {
-    try {
-      // Intentar login primero
-      await _auth.signInWithEmailAndPassword(email: email, password: '123456');
-    } catch (e) {
-      // Si no existe, crear usuario temporal
-      try {
-        await _auth.createUserWithEmailAndPassword(email: email, password: '123456');
-      } catch (createError) {
-        print('⚠️ Error creando sesión temporal: $createError');
-      }
-    }
-  }
-
-  /// Crear sesión local para usuarios hardcodeados
+  /// Crear sesión local para usuarios hardcodeados (SIN Firebase Auth)
   Future<ResultadoAuth> _crearSesionLocal(String id, String nombre, String rol) async {
     try {
       print('🏠 Creando sesión local para: $id');
 
-      // Crear email temporal para Firebase
-      String tempEmail = '$id@naboocustoms.local';
-      await _crearSesionFirebaseAuth(tempEmail, '123456');
-
-      // Crear objeto usuario local
+      // Crear objeto usuario local SIN tocar Firebase Auth
       Usuario usuario = Usuario(
         id: id,
-        email: tempEmail,
+        email: '$id@naboocustoms.local',
         nombre: nombre,
         rol: rol,
         activo: true,
@@ -161,7 +128,7 @@ class AuthService {
       return ResultadoAuth.exitoso(usuario);
     } catch (e) {
       print('⚠️ Error en sesión local: $e');
-      // Aunque falle Firebase, permitir acceso local
+      // En caso de error, crear usuario básico
       Usuario usuario = Usuario(
         id: id,
         email: '$id@naboocustoms.local',
@@ -174,21 +141,25 @@ class AuthService {
     }
   }
 
-  /// Cerrar sesión
+  /// Cerrar sesión SEGURA
   Future<void> cerrarSesion() async {
     try {
       print('🚪 Cerrando sesión...');
-      await _auth.signOut();
+
+      // Cerrar Firebase Auth solo si hay usuario activo
+      if (_auth.currentUser != null) {
+        await _auth.signOut();
+      }
+
       print('✅ Sesión cerrada exitosamente');
     } catch (e) {
       print('⚠️ Error cerrando sesión: $e');
+      // No lanzar error, permitir que continúe
     }
   }
 
   /// Verificar si el usuario está autenticado
   bool get estaAutenticado => _auth.currentUser != null;
-
-  // ==================== GESTIÓN DE USUARIOS ====================
 
   /// Obtener datos del usuario actual
   Future<Usuario?> obtenerUsuarioActual() async {
@@ -219,7 +190,7 @@ class AuthService {
     return false;
   }
 
-  /// Crear nuevo usuario - SOLO CON USUARIO Y CONTRASEÑA
+  /// Crear nuevo usuario SOLO EN FIRESTORE
   Future<ResultadoAuth> crearUsuario({
     required String usuario,
     required String nombre,
@@ -229,10 +200,12 @@ class AuthService {
     try {
       print('👤 Creando usuario: $usuario');
 
-      // Verificar que el usuario no exista
+      String usuarioNormalizado = usuario.trim().toLowerCase();
+
+      // Verificar que el usuario no exista en Firestore
       QuerySnapshot existeQuery = await _firestore
           .collection('usuarios')
-          .where('usuario', isEqualTo: usuario.trim().toLowerCase())
+          .where('usuario', isEqualTo: usuarioNormalizado)
           .limit(1)
           .get();
 
@@ -240,35 +213,28 @@ class AuthService {
         return ResultadoAuth.error('El usuario "$usuario" ya existe');
       }
 
-      // Crear nuevo usuario en Firestore
-      Usuario nuevoUsuario = Usuario(
-        id: '', // Se asignará automáticamente
-        email: '${usuario.trim().toLowerCase()}@naboocustoms.local', // Email temporal
-        nombre: nombre.trim(),
-        rol: rol,
-        activo: true,
-        fechaCreacion: DateTime.now(),
-      );
-
-      // Guardar en Firestore con campos adicionales
-      DocumentReference docRef = await _firestore.collection('usuarios').add({
-        'usuario': usuario.trim().toLowerCase(),
+      // Crear nuevo usuario SOLO en Firestore
+      Map<String, dynamic> datosUsuario = {
+        'usuario': usuarioNormalizado,
         'nombre': nombre.trim(),
         'password': password, // En un sistema real esto sería hasheado
         'rol': rol,
         'activo': true,
         'fechaCreacion': FieldValue.serverTimestamp(),
-        'email': '${usuario.trim().toLowerCase()}@naboocustoms.local',
-      });
+        'email': '${usuarioNormalizado}@naboocustoms.local',
+      };
 
-      // Actualizar el usuario con el ID correcto
-      nuevoUsuario = Usuario(
+      DocumentReference docRef = await _firestore
+          .collection('usuarios')
+          .add(datosUsuario);
+
+      Usuario nuevoUsuario = Usuario(
         id: docRef.id,
-        email: nuevoUsuario.email,
-        nombre: nuevoUsuario.nombre,
-        rol: nuevoUsuario.rol,
-        activo: nuevoUsuario.activo,
-        fechaCreacion: nuevoUsuario.fechaCreacion,
+        email: '${usuarioNormalizado}@naboocustoms.local',
+        nombre: nombre.trim(),
+        rol: rol,
+        activo: true,
+        fechaCreacion: DateTime.now(),
       );
 
       print('✅ Usuario creado exitosamente: $usuario');
@@ -388,11 +354,8 @@ class AuthService {
     }
   }
 
-  // ==================== UTILIDADES ====================
-
   static bool usuarioValido(String usuario) {
     String usuarioLimpio = usuario.trim().toLowerCase();
-    // Solo letras, números y algunos caracteres especiales
     return RegExp(r'^[a-zA-Z0-9._-]+$').hasMatch(usuarioLimpio) && usuarioLimpio.length >= 3;
   }
 
@@ -400,7 +363,6 @@ class AuthService {
     return password.length >= 4;
   }
 
-  // MÉTODO AGREGADO PARA VERIFICAR CONEXIÓN 👇
   Future<bool> verificarConexion() async {
     try {
       await _firestore.collection('test').limit(1).get();

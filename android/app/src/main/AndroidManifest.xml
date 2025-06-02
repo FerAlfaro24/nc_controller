@@ -9,7 +9,9 @@
         android:label="NC Controller"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
-        android:usesCleartextTraffic="true">
+        android:usesCleartextTraffic="true"
+        android:hardwareAccelerated="false">  <!-- Agrega esta línea -->
+
 
         <activity
             android:name=".MainActivity"

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../nucleo/constantes/colores_app.dart';
+import '../servicios/auth_service.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 import 'gestion_usuarios_screen.dart';
@@ -16,7 +18,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true, // Manejar teclado
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         title: const Text('PANEL ADMINISTRADOR'),
         leading: Builder(
@@ -351,7 +353,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
             ),
           ),
 
-          // Footer con cerrar sesión SIMPLE
+          // Footer con cerrar sesión MEJORADO
           Container(
             padding: const EdgeInsets.all(16),
             child: _itemDrawer(
@@ -394,32 +396,49 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   ),
                 );
 
-                // Si confirma, ir al login
+                // Si confirma, cerrar sesión de forma segura
                 if (confirmar == true && mounted) {
-                  // Mostrar mensaje de despedida
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Row(
-                        children: [
-                          Icon(Icons.check_circle, color: Colors.white, size: 20),
-                          SizedBox(width: 8),
-                          Text('Sesión administrativa cerrada'),
-                        ],
-                      ),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
+                  try {
+                    // IMPORTANTE: Usar el AuthService de forma segura
+                    final authService = Provider.of<AuthService>(context, listen: false);
+                    await authService.cerrarSesion();
 
-                  // Pequeña pausa para mostrar el mensaje
-                  await Future.delayed(const Duration(milliseconds: 500));
+                    // Mostrar mensaje de despedida
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.white, size: 20),
+                              SizedBox(width: 8),
+                              Text('Sesión administrativa cerrada'),
+                            ],
+                          ),
+                          backgroundColor: Colors.green,
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
 
-                  // Navegar a login limpiando toda la pila de navegación
-                  if (mounted) {
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const PantallaLogin()),
-                          (route) => false,
-                    );
+                      // Pequeña pausa para mostrar el mensaje
+                      await Future.delayed(const Duration(milliseconds: 500));
+
+                      // Navegar a login limpiando toda la pila de navegación
+                      if (mounted) {
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                              (route) => false,
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    print('⚠️ Error cerrando sesión: $e');
+                    // Aún así, navegar al login
+                    if (mounted) {
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                            (route) => false,
+                      );
+                    }
                   }
                 }
               },

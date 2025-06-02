@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../servicios/auth_service.dart';
 import '../nucleo/constantes/colores_app.dart';
 import 'home_screen.dart';
@@ -19,6 +18,9 @@ class _PantallaLoginState extends State<PantallaLogin> {
   bool _cargando = false;
   bool _mostrarPassword = false;
 
+  // CREAR INSTANCIA DIRECTA SIN PROVIDER
+  final AuthService _authService = AuthService();
+
   @override
   void dispose() {
     _usuarioController.dispose();
@@ -32,11 +34,9 @@ class _PantallaLoginState extends State<PantallaLogin> {
     setState(() => _cargando = true);
 
     try {
-      final authService = context.read<AuthService>();
+      print('🔐 Intentando login con: ${_usuarioController.text} / ${_passwordController.text}');
 
-      print('Intentando login con: ${_usuarioController.text} / ${_passwordController.text}');
-
-      ResultadoAuth resultado = await authService.iniciarSesion(
+      ResultadoAuth resultado = await _authService.iniciarSesion(
         _usuarioController.text,
         _passwordController.text,
       );
@@ -45,6 +45,8 @@ class _PantallaLoginState extends State<PantallaLogin> {
         setState(() => _cargando = false);
 
         if (resultado.exitoso && resultado.usuario != null) {
+          print('✅ Login exitoso para: ${resultado.usuario!.nombre}');
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('¡Bienvenido, ${resultado.usuario!.nombre}!'),
@@ -59,16 +61,19 @@ class _PantallaLoginState extends State<PantallaLogin> {
           // Navegar según el rol del usuario
           if (mounted) {
             if (resultado.usuario!.esAdmin) {
+              print('🔄 Navegando a pantalla admin');
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (context) => const PantallaAdmin()),
               );
             } else {
+              print('🔄 Navegando a pantalla home');
               Navigator.of(context).pushReplacement(
                 MaterialPageRoute(builder: (context) => const PantallaHome()),
               );
             }
           }
         } else {
+          print('❌ Error de login: ${resultado.error}');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(resultado.error ?? 'Error desconocido'),
@@ -79,6 +84,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
         }
       }
     } catch (e) {
+      print('❌ Excepción en login: $e');
       if (mounted) {
         setState(() => _cargando = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -290,6 +296,19 @@ class _PantallaLoginState extends State<PantallaLogin> {
                           ),
                           const SizedBox(height: 32),
 
+                          // Debug info
+                          if (_cargando)
+                            const Padding(
+                              padding: EdgeInsets.all(8.0),
+                              child: Text(
+                                'Autenticando...',
+                                style: TextStyle(
+                                  color: ColoresApp.textoSecundario,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+
                           // Información de credenciales
                           Container(
                             padding: const EdgeInsets.all(16),
@@ -324,17 +343,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
                                   textAlign: TextAlign.center,
                                 ),
                               ],
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-
-                          // Botón volver
-                          TextButton.icon(
-                            onPressed: () => Navigator.of(context).pop(),
-                            icon: const Icon(Icons.arrow_back, color: ColoresApp.textoApagado),
-                            label: const Text(
-                              'Volver',
-                              style: TextStyle(color: ColoresApp.textoApagado),
                             ),
                           ),
                         ],
