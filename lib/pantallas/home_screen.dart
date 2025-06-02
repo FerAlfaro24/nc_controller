@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../nucleo/constantes/colores_app.dart';
 import '../servicios/auth_service.dart';
+import '../servicios/firebase_service.dart';
+import '../modelos/configuracion_app.dart';
+import '../widgets/publicidad_push_widget.dart';
 import 'login_screen.dart';
 
 class PantallaHome extends StatefulWidget {
@@ -12,6 +15,31 @@ class PantallaHome extends StatefulWidget {
 }
 
 class _PantallaHomeState extends State<PantallaHome> {
+  bool _publicidadMostrada = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _mostrarPublicidadSiCorresponde();
+  }
+
+  void _mostrarPublicidadSiCorresponde() {
+    // Esperar un poco para que la pantalla se cargue completamente
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted && !_publicidadMostrada) {
+        final firebaseService = FirebaseService();
+
+        // Escuchar la configuración para obtener la publicidad
+        firebaseService.obtenerConfiguracion().listen((config) {
+          if (mounted && !_publicidadMostrada && config.publicidadPush.deberíaMostrarse) {
+            _publicidadMostrada = true;
+            PublicidadPushModal.mostrar(context, config.publicidadPush);
+          }
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,117 +71,238 @@ class _PantallaHomeState extends State<PantallaHome> {
             ],
           ),
         ),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'CENTRO DE CONTROL',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Controla tus figuras futuristas',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 32),
-
-              // Tarjetas principales
-              Row(
+        child: Stack(
+          children: [
+            SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: _tarjetaNavegacion(
-                      'NAVES',
-                      Icons.rocket,
-                      ColoresApp.azulPrimario,
-                          () {
-                        print("Navegando a NAVES");
-                        // TODO: Navegar a pantalla de naves
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _tarjetaNavegacion(
-                      'DIORAMAS',
-                      Icons.landscape,
-                      ColoresApp.moradoPrimario,
-                          () {
-                        print("Navegando a DIORAMAS");
-                        // TODO: Navegar a pantalla de dioramas
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
+                  // Texto marquee dinámico de Firebase
+                  StreamBuilder<ConfiguracionApp>(
+                    stream: FirebaseService().obtenerConfiguracion(),
+                    builder: (context, snapshot) {
+                      if (!snapshot.hasData) {
+                        return Container(
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: Colors.black,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Center(
+                            child: Text(
+                              'Cargando...',
+                              style: TextStyle(color: Colors.white, fontSize: 14),
+                            ),
+                          ),
+                        );
+                      }
 
-              Row(
-                children: [
-                  Expanded(
-                    child: _tarjetaNavegacion(
-                      'BLUETOOTH',
-                      Icons.bluetooth,
-                      ColoresApp.cyanPrimario,
-                          () {
-                        print("Navegando a BLUETOOTH");
-                        // TODO: Navegar a configuración bluetooth
-                      },
-                    ),
+                      return Container(
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
+                        ),
+                        child: Center(
+                          child: _TextoMarquee(
+                            texto: snapshot.data!.textoMarquee,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _tarjetaNavegacion(
-                      'PERFIL',
-                      Icons.person,
-                      ColoresApp.verdeAcento,
-                          () {
-                        print("Navegando a PERFIL");
-                        // TODO: Navegar a perfil de usuario
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
+                  const SizedBox(height: 32),
 
-              // Sección de estado
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: ColoresApp.tarjetaOscura,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: ColoresApp.bordeGris),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'ESTADO DEL SISTEMA',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                  const Text(
+                    'CENTRO DE CONTROL',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Controla tus figuras futuristas',
+                    style: TextStyle(
+                      color: Colors.grey,
+                      fontSize: 16,
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Tarjetas principales
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _tarjetaNavegacion(
+                          'NAVES',
+                          Icons.rocket,
+                          ColoresApp.azulPrimario,
+                              () {
+                            print("Navegando a NAVES");
+                            _mostrarEnConstruccion(context, 'Naves');
+                          },
+                        ),
                       ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _tarjetaNavegacion(
+                          'DIORAMAS',
+                          Icons.landscape,
+                          ColoresApp.moradoPrimario,
+                              () {
+                            print("Navegando a DIORAMAS");
+                            _mostrarEnConstruccion(context, 'Dioramas');
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _tarjetaNavegacion(
+                          'BLUETOOTH',
+                          Icons.bluetooth,
+                          ColoresApp.cyanPrimario,
+                              () {
+                            print("Navegando a BLUETOOTH");
+                            _mostrarEnConstruccion(context, 'Bluetooth');
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _tarjetaNavegacion(
+                          'PERFIL',
+                          Icons.person,
+                          ColoresApp.verdeAcento,
+                              () {
+                            print("Navegando a PERFIL");
+                            _mostrarEnConstruccion(context, 'Perfil');
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Sección de estado del sistema
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: ColoresApp.tarjetaOscura,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: ColoresApp.bordeGris),
                     ),
-                    const SizedBox(height: 16),
-                    _itemEstado('Firebase', true, 'Conectado'),
-                    _itemEstado('Bluetooth', false, 'Desconectado'),
-                    _itemEstado('Figuras', true, '4 disponibles'),
-                  ],
-                ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.monitor_heart,
+                              color: ColoresApp.cyanPrimario,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'ESTADO DEL SISTEMA',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        _itemEstado('Firebase', true, 'Conectado'),
+                        _itemEstado('Bluetooth', false, 'Desconectado'),
+                        _itemEstado('Figuras', true, '4 disponibles'),
+                        _itemEstado('Cloudinary', true, 'Imágenes activas'),
+                      ],
+                    ),
+                  ),
+
+                  // Sección de accesos rápidos
+                  const SizedBox(height: 24),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: ColoresApp.tarjetaOscura,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: ColoresApp.bordeGris),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.link,
+                              color: ColoresApp.verdeAcento,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'ENLACES RÁPIDOS',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _botonEnlace(
+                                'Instagram',
+                                Icons.camera_alt,
+                                ColoresApp.rosaAcento,
+                                'https://instagram.com/naboocustoms',
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _botonEnlace(
+                                'Facebook',
+                                Icons.facebook,
+                                ColoresApp.azulPrimario,
+                                'https://facebook.com/naboocustoms',
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: _botonEnlace(
+                            'Catálogo en Drive',
+                            Icons.folder_open,
+                            ColoresApp.naranjaAcento,
+                            'https://drive.google.com/catalogo-naboocustoms',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Espaciado final
+                  const SizedBox(height: 100),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -229,7 +378,7 @@ class _PantallaHomeState extends State<PantallaHome> {
                   'NAVES',
                       () {
                     Navigator.pop(context);
-                    print("Navegando a NAVES");
+                    _mostrarEnConstruccion(context, 'Naves');
                   },
                 ),
                 _itemDrawer(
@@ -238,7 +387,7 @@ class _PantallaHomeState extends State<PantallaHome> {
                   'DIORAMAS',
                       () {
                     Navigator.pop(context);
-                    print("Navegando a DIORAMAS");
+                    _mostrarEnConstruccion(context, 'Dioramas');
                   },
                 ),
                 _itemDrawer(
@@ -247,7 +396,7 @@ class _PantallaHomeState extends State<PantallaHome> {
                   'BLUETOOTH',
                       () {
                     Navigator.pop(context);
-                    print("Navegando a BLUETOOTH");
+                    _mostrarEnConstruccion(context, 'Bluetooth');
                   },
                 ),
                 const Divider(color: Color(0xFF404040)),
@@ -257,14 +406,23 @@ class _PantallaHomeState extends State<PantallaHome> {
                   'PERFIL',
                       () {
                     Navigator.pop(context);
-                    print("Navegando a PERFIL");
+                    _mostrarEnConstruccion(context, 'Perfil');
+                  },
+                ),
+                _itemDrawer(
+                  context,
+                  Icons.help_outline,
+                  'AYUDA',
+                      () {
+                    Navigator.pop(context);
+                    _mostrarAyuda(context);
                   },
                 ),
               ],
             ),
           ),
 
-          // Footer con cerrar sesión MEJORADO
+          // Footer con cerrar sesión
           Container(
             padding: const EdgeInsets.all(16),
             child: _itemDrawer(
@@ -310,11 +468,9 @@ class _PantallaHomeState extends State<PantallaHome> {
                 // Si confirma, cerrar sesión de forma segura
                 if (confirmar == true && mounted) {
                   try {
-                    // IMPORTANTE: Usar el AuthService de forma segura
                     final authService = Provider.of<AuthService>(context, listen: false);
                     await authService.cerrarSesion();
 
-                    // Mostrar mensaje de despedida
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -330,10 +486,8 @@ class _PantallaHomeState extends State<PantallaHome> {
                         ),
                       );
 
-                      // Pequeña pausa para mostrar el mensaje
                       await Future.delayed(const Duration(milliseconds: 500));
 
-                      // Navegar a login limpiando toda la pila de navegación
                       if (mounted) {
                         Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(builder: (context) => const PantallaLogin()),
@@ -343,7 +497,6 @@ class _PantallaHomeState extends State<PantallaHome> {
                     }
                   } catch (e) {
                     print('⚠️ Error cerrando sesión: $e');
-                    // Aún así, navegar al login
                     if (mounted) {
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(builder: (context) => const PantallaLogin()),
@@ -479,6 +632,174 @@ class _PantallaHomeState extends State<PantallaHome> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _botonEnlace(String titulo, IconData icono, Color color, String url) {
+    return ElevatedButton.icon(
+      onPressed: () {
+        // TODO: Implementar apertura de URLs
+        _mostrarInfo(context, 'Enlace: $titulo', 'Se abriría: $url');
+      },
+      icon: Icon(icono, size: 18),
+      label: Text(titulo),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      ),
+    );
+  }
+
+  void _mostrarEnConstruccion(BuildContext context, String seccion) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: Row(
+          children: [
+            Icon(Icons.construction, color: ColoresApp.naranjaAcento),
+            const SizedBox(width: 8),
+            Text(
+              'En Construcción',
+              style: TextStyle(color: ColoresApp.textoPrimario),
+            ),
+          ],
+        ),
+        content: Text(
+          'La sección "$seccion" está en desarrollo.\n\n¡Pronto estará disponible con funcionalidades completas!',
+          style: TextStyle(color: ColoresApp.textoSecundario),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarAyuda(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: Row(
+          children: [
+            Icon(Icons.help, color: ColoresApp.cyanPrimario),
+            const SizedBox(width: 8),
+            Text(
+              'Ayuda',
+              style: TextStyle(color: ColoresApp.textoPrimario),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Naboo Customs Controller',
+              style: TextStyle(
+                color: ColoresApp.textoPrimario,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Aplicación para controlar figuras con Arduino y Bluetooth.\n\n'
+                  '• Conecta tus figuras vía Bluetooth\n'
+                  '• Controla LEDs y música\n'
+                  '• Activa efectos de humo\n'
+                  '• Gestiona tu colección',
+              style: TextStyle(color: ColoresApp.textoSecundario),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarInfo(BuildContext context, String titulo, String mensaje) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: Text(titulo, style: TextStyle(color: ColoresApp.textoPrimario)),
+        content: Text(mensaje, style: TextStyle(color: ColoresApp.textoSecundario)),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// Widget personalizado para texto marquee
+class _TextoMarquee extends StatefulWidget {
+  final String texto;
+
+  const _TextoMarquee({required this.texto});
+
+  @override
+  State<_TextoMarquee> createState() => _TextoMarqueeState();
+}
+
+class _TextoMarqueeState extends State<_TextoMarquee>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(seconds: 10),
+      vsync: this,
+    );
+    _animation = Tween<double>(begin: 1.0, end: -1.0).animate(_controller);
+    _controller.repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(_animation.value * MediaQuery.of(context).size.width, 0),
+          child: Text(
+            widget.texto,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+            overflow: TextOverflow.visible,
+            maxLines: 1,
+          ),
+        );
+      },
     );
   }
 }

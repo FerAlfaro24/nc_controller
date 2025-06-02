@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  # Firebase - VERSIONES ESTABLES Y COMPATIBLES (CORREGIDAS)
+  # Firebase - VERSIONES ESTABLES Y COMPATIBLES
   firebase_core: ^2.32.0
   firebase_auth: ^4.16.0
   cloud_firestore: ^4.17.5
@@ -30,6 +30,11 @@ dependencies:
   webview_flutter: ^4.13.0
   image_picker: ^1.1.2
   cached_network_image: ^3.4.1
+
+  # NUEVAS DEPENDENCIAS PARA CLOUDINARY
+  cloudinary_public: ^0.23.1
+  http: ^1.4.0
+  dio: ^5.4.0
 
   # Iconos
   cupertino_icons: ^1.0.8

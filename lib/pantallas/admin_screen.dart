@@ -6,6 +6,7 @@ import 'login_screen.dart';
 import 'home_screen.dart';
 import 'gestion_usuarios_screen.dart';
 import 'utilidades_admin_screen.dart';
+import 'gestion_publicidad_screen.dart';
 
 class PantallaAdmin extends StatefulWidget {
   const PantallaAdmin({super.key});
@@ -30,7 +31,9 @@ class _PantallaAdminState extends State<PantallaAdmin> {
         actions: [
           IconButton(
             icon: const Icon(Icons.admin_panel_settings),
-            onPressed: () {},
+            onPressed: () {
+              _mostrarInfoAdmin(context);
+            },
           ),
         ],
       ),
@@ -56,15 +59,36 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: ColoresApp.gradientePrimario,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      ColoresApp.rojoAcento.withOpacity(0.8),
+                      ColoresApp.naranjaAcento.withOpacity(0.8),
+                    ],
+                  ),
                   borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: ColoresApp.rojoAcento.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
                 child: Row(
                   children: [
-                    const Icon(
-                      Icons.admin_panel_settings,
-                      size: 40,
-                      color: Colors.white,
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.admin_panel_settings,
+                        size: 32,
+                        color: Colors.white,
+                      ),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -82,9 +106,9 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Control total del sistema',
+                            'Control total del sistema NC Controller',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withOpacity(0.9),
                               fontSize: 14,
                             ),
                           ),
@@ -94,11 +118,13 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
 
               // CONFIGURACIÓN DE APLICACIÓN
               _seccionAdmin(
                 'CONFIGURACIÓN DE APLICACIÓN',
+                Icons.settings,
+                ColoresApp.cyanPrimario,
                 [
                   _tarjetaAdmin(
                     'Texto Marquee',
@@ -106,26 +132,32 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                     Icons.text_fields,
                     ColoresApp.cyanPrimario,
                         () {
-                      print("Configurar texto marquee");
+                      _mostrarDialogoTextoMarquee();
                     },
                   ),
                   _tarjetaAdmin(
                     'Publicidad Push',
-                    'Gestionar imagen promocional',
+                    'Gestionar promociones con Cloudinary',
                     Icons.campaign,
                     ColoresApp.naranjaAcento,
                         () {
-                      print("Gestionar publicidad");
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const PantallaGestionPublicidad(),
+                        ),
+                      );
                     },
                   ),
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // GESTIÓN DE CONTENIDO
               _seccionAdmin(
                 'GESTIÓN DE CONTENIDO',
+                Icons.inventory,
+                ColoresApp.verdeAcento,
                 [
                   _tarjetaAdmin(
                     'Gestionar Usuarios',
@@ -146,17 +178,19 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                     Icons.category,
                     ColoresApp.moradoPrimario,
                         () {
-                      print("Gestionar figuras");
+                      _mostrarEnConstruccion('Gestión de Figuras');
                     },
                   ),
                 ],
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
 
               // ESTADÍSTICAS Y MONITOREO
               _seccionAdmin(
                 'ESTADÍSTICAS Y MONITOREO',
+                Icons.analytics,
+                ColoresApp.azulPrimario,
                 [
                   _tarjetaAdmin(
                     'Estadísticas',
@@ -164,7 +198,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                     Icons.analytics,
                     ColoresApp.azulPrimario,
                         () {
-                      print("Ver estadísticas");
+                      _mostrarEstadisticas();
                     },
                   ),
                   _tarjetaAdmin(
@@ -183,54 +217,81 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 ],
               ),
 
+              const SizedBox(height: 20),
+
+              // ACCESO RÁPIDO
+              _seccionAdmin(
+                'ACCESO RÁPIDO',
+                Icons.flash_on,
+                ColoresApp.rosaAcento,
+                [
+                  _tarjetaAdmin(
+                    'Vista Usuario',
+                    'Ver app como cliente',
+                    Icons.person,
+                    ColoresApp.informacion,
+                        () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (context) => const PantallaHome()),
+                      );
+                    },
+                  ),
+                  _tarjetaAdmin(
+                    'Logs del Sistema',
+                    'Ver registros y errores',
+                    Icons.list_alt,
+                    ColoresApp.advertencia,
+                        () {
+                      _mostrarLogs();
+                    },
+                  ),
+                ],
+              ),
+
               const SizedBox(height: 24),
 
-              // Sección final más compacta
+              // INFORMACIÓN DEL SISTEMA
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: ColoresApp.informacion.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: ColoresApp.informacion.withOpacity(0.3)),
+                  color: ColoresApp.tarjetaOscura,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: ColoresApp.bordeGris),
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(
-                      Icons.swap_horiz,
-                      color: ColoresApp.informacion,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Modo Usuario',
-                        style: TextStyle(
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
                           color: ColoresApp.informacion,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 12,
+                          size: 24,
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'INFORMACIÓN DEL SISTEMA',
+                          style: TextStyle(
+                            color: ColoresApp.textoPrimario,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
                     ),
-                    ElevatedButton(
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (context) => const PantallaHome()),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: ColoresApp.informacion,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        minimumSize: const Size(60, 30),
-                      ),
-                      child: const Text('Ver', style: TextStyle(fontSize: 11)),
-                    ),
+                    const SizedBox(height: 16),
+                    _itemInformacion('Versión', '1.0.0'),
+                    _itemInformacion('Firebase', 'Conectado'),
+                    _itemInformacion('Cloudinary', 'Activo'),
+                    _itemInformacion('Usuarios', '4 registrados'),
+                    _itemInformacion('Figuras', '4 disponibles'),
+                    _itemInformacion('Última actualización', 'Hace 2 minutos'),
                   ],
                 ),
               ),
 
               // Espaciado final para evitar que el último elemento toque el bottom
-              const SizedBox(height: 20),
+              const SizedBox(height: 24),
             ],
           ),
         ),
@@ -299,7 +360,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   'PANEL PRINCIPAL',
                       () {
                     Navigator.pop(context);
-                    print("Ya estás en el panel principal");
                   },
                 ),
                 _itemDrawer(
@@ -317,11 +377,24 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 ),
                 _itemDrawer(
                   context,
+                  Icons.campaign,
+                  'PUBLICIDAD',
+                      () {
+                    Navigator.pop(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PantallaGestionPublicidad(),
+                      ),
+                    );
+                  },
+                ),
+                _itemDrawer(
+                  context,
                   Icons.category,
                   'FIGURAS',
                       () {
                     Navigator.pop(context);
-                    print("Navegando a gestión de figuras");
+                    _mostrarEnConstruccion('Gestión de Figuras');
                   },
                 ),
                 _itemDrawer(
@@ -399,11 +472,9 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 // Si confirma, cerrar sesión de forma segura
                 if (confirmar == true && mounted) {
                   try {
-                    // IMPORTANTE: Usar el AuthService de forma segura
                     final authService = Provider.of<AuthService>(context, listen: false);
                     await authService.cerrarSesion();
 
-                    // Mostrar mensaje de despedida
                     if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -419,10 +490,8 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                         ),
                       );
 
-                      // Pequeña pausa para mostrar el mensaje
                       await Future.delayed(const Duration(milliseconds: 500));
 
-                      // Navegar a login limpiando toda la pila de navegación
                       if (mounted) {
                         Navigator.of(context).pushAndRemoveUntil(
                           MaterialPageRoute(builder: (context) => const PantallaLogin()),
@@ -432,7 +501,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                     }
                   } catch (e) {
                     print('⚠️ Error cerrando sesión: $e');
-                    // Aún así, navegar al login
                     if (mounted) {
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(builder: (context) => const PantallaLogin()),
@@ -482,21 +550,37 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     );
   }
 
-  Widget _seccionAdmin(String titulo, List<Widget> tarjetas) {
+  Widget _seccionAdmin(String titulo, IconData icono, Color color, List<Widget> tarjetas) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          titulo,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icono, color: color, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                titulo,
+                style: TextStyle(
+                  color: color,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 12),
-        // Usar Column y Row en lugar de GridView para mejor control
+        const SizedBox(height: 16),
+
+        // Grid de tarjetas
         for (int i = 0; i < tarjetas.length; i += 2)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -519,8 +603,8 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 100, // Altura fija para evitar overflow
-        padding: const EdgeInsets.all(12),
+        height: 110,
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: ColoresApp.tarjetaOscura,
           borderRadius: BorderRadius.circular(16),
@@ -537,36 +621,46 @@ class _PantallaAdminState extends State<PantallaAdmin> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                icono,
-                size: 20,
-                color: color,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    icono,
+                    size: 20,
+                    color: color,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16,
+                  color: ColoresApp.textoApagado,
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
               titulo,
               style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
+                color: ColoresApp.textoPrimario,
+                fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 2),
+            const SizedBox(height: 4),
             Expanded(
               child: Text(
                 descripcion,
                 style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 10,
+                  color: ColoresApp.textoSecundario,
+                  fontSize: 11,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -574,6 +668,360 @@ class _PantallaAdminState extends State<PantallaAdmin> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _itemInformacion(String titulo, String valor) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Text(
+            '$titulo:',
+            style: const TextStyle(
+              color: ColoresApp.textoSecundario,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            valor,
+            style: const TextStyle(
+              color: ColoresApp.textoPrimario,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarDialogoTextoMarquee() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: Row(
+          children: [
+            Icon(Icons.text_fields, color: ColoresApp.cyanPrimario),
+            const SizedBox(width: 8),
+            const Text(
+              'Configurar Texto Marquee',
+              style: TextStyle(color: ColoresApp.textoPrimario),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Esta funcionalidad permite editar el texto que se desliza en la pantalla principal.',
+              style: TextStyle(color: ColoresApp.textoSecundario),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: ColoresApp.informacion.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: ColoresApp.informacion.withOpacity(0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: ColoresApp.informacion, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Se implementará junto con la gestión de figuras',
+                      style: TextStyle(
+                        color: ColoresApp.informacion,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarEstadisticas() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: Row(
+          children: [
+            Icon(Icons.analytics, color: ColoresApp.azulPrimario),
+            const SizedBox(width: 8),
+            const Text(
+              'Estadísticas del Sistema',
+              style: TextStyle(color: ColoresApp.textoPrimario),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _estatistica('Usuarios Activos', '4', ColoresApp.verdeAcento),
+            _estatistica('Figuras Disponibles', '4', ColoresApp.azulPrimario),
+            _estatistica('Conexiones Bluetooth', '0', ColoresApp.advertencia),
+            _estatistica('Imágenes en Cloudinary', '2', ColoresApp.cyanPrimario),
+            _estatistica('Sesiones Admin', '1', ColoresApp.rojoAcento),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.azulPrimario),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _estatistica(String titulo, String valor, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              titulo,
+              style: const TextStyle(
+                color: ColoresApp.textoPrimario,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          Text(
+            valor,
+            style: TextStyle(
+              color: color,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarLogs() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: Row(
+          children: [
+            Icon(Icons.list_alt, color: ColoresApp.advertencia),
+            const SizedBox(width: 8),
+            const Text(
+              'Logs del Sistema',
+              style: TextStyle(color: ColoresApp.textoPrimario),
+            ),
+          ],
+        ),
+        content: Container(
+          width: double.maxFinite,
+          height: 300,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _logEntry('✅', '2024-01-15 10:30:25', 'Firebase inicializado correctamente'),
+                    _logEntry('✅', '2024-01-15 10:30:26', 'AuthService inicializado'),
+                    _logEntry('✅', '2024-01-15 10:30:27', 'CloudinaryService inicializado'),
+                    _logEntry('📤', '2024-01-15 10:45:12', 'Imagen subida a Cloudinary'),
+                    _logEntry('👤', '2024-01-15 10:47:33', 'Usuario admin logueado'),
+                    _logEntry('⚙️', '2024-01-15 10:48:15', 'Configuración actualizada'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.advertencia),
+            child: const Text('Cerrar'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _logEntry(String emoji, String tiempo, String mensaje) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 12)),
+          const SizedBox(width: 8),
+          Text(
+            tiempo,
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 10,
+              fontFamily: 'monospace',
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              mensaje,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarEnConstruccion(String seccion) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: Row(
+          children: [
+            Icon(Icons.construction, color: ColoresApp.naranjaAcento),
+            const SizedBox(width: 8),
+            Text(
+              'En Construcción',
+              style: TextStyle(color: ColoresApp.textoPrimario),
+            ),
+          ],
+        ),
+        content: Text(
+          'La sección "$seccion" está en desarrollo.\n\n¡Pronto estará disponible con funcionalidades completas!',
+          style: TextStyle(color: ColoresApp.textoSecundario),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.naranjaAcento),
+            child: const Text('Entendido'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _mostrarInfoAdmin(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ColoresApp.tarjetaOscura,
+        title: Row(
+          children: [
+            Icon(Icons.admin_panel_settings, color: ColoresApp.rojoAcento),
+            const SizedBox(width: 8),
+            const Text(
+              'Panel de Administración',
+              style: TextStyle(color: ColoresApp.textoPrimario),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Naboo Customs Controller Admin',
+              style: TextStyle(
+                color: ColoresApp.textoPrimario,
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Panel de control completo para gestionar:\n\n'
+                  '• Usuarios y permisos\n'
+                  '• Publicidad push con Cloudinary\n'
+                  '• Configuración del sistema\n'
+                  '• Monitoreo y estadísticas\n'
+                  '• Utilidades administrativas',
+              style: TextStyle(color: ColoresApp.textoSecundario),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: ColoresApp.rojoAcento.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.security, color: ColoresApp.rojoAcento, size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Acceso restringido a administradores',
+                      style: TextStyle(
+                        color: ColoresApp.rojoAcento,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.rojoAcento),
+            child: const Text('Cerrar'),
+          ),
+        ],
       ),
     );
   }
