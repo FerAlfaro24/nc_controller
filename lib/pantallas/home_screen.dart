@@ -6,7 +6,7 @@ import '../servicios/auth_service.dart';
 import '../servicios/firebase_service.dart';
 import '../modelos/configuracion_app.dart';
 import '../widgets/publicidad_push_widget.dart';
-import '../widgets/simple_scrolling_text.dart';
+import '../widgets/marquee_text_widget.dart';
 import 'login_screen.dart';
 
 class PantallaHome extends StatefulWidget {
@@ -76,43 +76,128 @@ class _PantallaHomeState extends State<PantallaHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Texto marquee dinámico MEJORADO
+              // Texto marquee dinámico CORREGIDO Y RÁPIDO
               StreamBuilder<ConfiguracionApp>(
                 stream: FirebaseService().obtenerConfiguracion(),
                 builder: (context, snapshot) {
+                  print('🏠 Home: StreamBuilder builder ejecutado');
+                  print('🏠 Home: hasData: ${snapshot.hasData}');
+                  print('🏠 Home: hasError: ${snapshot.hasError}');
+
+                  if (snapshot.hasError) {
+                    print('❌ Home: Error en stream: ${snapshot.error}');
+                  }
+
+                  if (snapshot.hasData) {
+                    print('✅ Home: Datos recibidos. Texto: "${snapshot.data!.textoMarquee}"');
+                  }
+
+                  // Mostrar indicador de carga mientras se obtienen los datos
                   if (!snapshot.hasData) {
                     return Container(
                       height: 40,
                       decoration: BoxDecoration(
                         color: Colors.black,
                         borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: ColoresApp.cyanPrimario.withOpacity(0.3),
+                        ),
                       ),
-                      child: const Center(
-                        child: Text(
-                          'Cargando...',
-                          style: TextStyle(color: Colors.white, fontSize: 14),
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  ColoresApp.cyanPrimario,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            const Text(
+                              'Cargando información...',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     );
                   }
 
-                  return Container(
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
-                    ),
-                    child: Center(
-                      child: SimpleScrollingText(
-                        text: snapshot.data!.textoMarquee,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
+                  // Mostrar error si hay algún problema
+                  if (snapshot.hasError) {
+                    return Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: ColoresApp.error.withOpacity(0.3),
                         ),
-                        duration: const Duration(seconds: 6),
                       ),
+                      child: Center(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.warning_amber,
+                              color: ColoresApp.error,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Error cargando configuración',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+
+                  final configuracion = snapshot.data!;
+                  final textoMarquee = configuracion.textoMarquee.isNotEmpty
+                      ? configuracion.textoMarquee
+                      : '¡Bienvenido a Naboo Customs! 🚀';
+
+                  print('🎨 Home: Renderizando marquee con texto: "$textoMarquee"');
+
+                  // Widget marquee SIMPLE, RÁPIDO Y CONFIABLE
+                  return Container(
+                    key: ValueKey(textoMarquee), // Forzar rebuild cuando cambie el texto
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: ColoresApp.cyanPrimario.withOpacity(0.3),
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: SimpleMarqueeText(
+                      text: textoMarquee,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
+                      ),
+                      duration: const Duration(seconds: 4), // ⚡ VELOCIDAD OPTIMIZADA
+                      height: 40,
+                      backgroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
                   );
                 },

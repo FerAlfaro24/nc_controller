@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../nucleo/constantes/colores_app.dart';
 import '../servicios/auth_service.dart';
 import '../servicios/firebase_service.dart';
 import '../modelos/configuracion_app.dart';
-import '../widgets/auto_scrolling_text.dart'; // ✅ IMPORTAR EL NUEVO WIDGET
+import '../widgets/auto_scrolling_text.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 import 'gestion_usuarios_screen.dart';
@@ -43,6 +44,15 @@ class _PantallaAdminState extends State<PantallaAdmin> {
         ],
       ),
       drawer: _construirDrawer(context),
+
+      // BOTÓN DE DEBUG TEMPORAL
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _debugFirebase,
+        icon: const Icon(Icons.bug_report),
+        label: const Text('DEBUG'),
+        backgroundColor: ColoresApp.advertencia,
+      ),
+
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -111,7 +121,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                           ),
                           const SizedBox(height: 4),
                           SizedBox(
-                            height: 20, // ✅ Altura fija para evitar overflow
+                            height: 20,
                             child: Text(
                               'Control total del Sistema',
                               style: TextStyle(
@@ -302,7 +312,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 100), // Espacio para el botón flotante
             ],
           ),
         ),
@@ -608,12 +618,11 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     );
   }
 
-  // ✅ TARJETA CORREGIDA CON AUTO-SCROLL
   Widget _tarjetaAdmin(String titulo, String descripcion, IconData icono, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 105, // ✅ Altura optimizada
+        height: 105,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: ColoresApp.tarjetaOscura,
@@ -725,48 +734,152 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     );
   }
 
-  void _mostrarDialogoTextoMarquee() {
+  // MÉTODO DE DIÁLOGO DE TEXTO MARQUEE MEJORADO CON DEBUG
+  void _mostrarDialogoTextoMarquee() async {
     final TextEditingController controller = TextEditingController();
+
+    // Cargar el texto actual con debug
+    try {
+      print('🔍 Admin: Cargando configuración actual...');
+      final config = await _firebaseService.obtenerConfiguracion().first;
+      controller.text = config.textoMarquee;
+      print('✅ Admin: Texto actual cargado: "${config.textoMarquee}"');
+    } catch (e) {
+      print('❌ Admin: Error cargando configuración: $e');
+      controller.text = '¡Bienvenidos a Naboo Customs!';
+    }
+
+    if (!mounted) return;
 
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
           backgroundColor: ColoresApp.tarjetaOscura,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
+          ),
           title: Row(
             children: [
-              Icon(Icons.text_fields, color: ColoresApp.cyanPrimario),
-              const SizedBox(width: 8),
-              const Text(
-                'Editar Texto Marquee',
-                style: TextStyle(color: ColoresApp.textoPrimario),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ColoresApp.cyanPrimario.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(Icons.text_fields, color: ColoresApp.cyanPrimario, size: 24),
               ),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Edita el mensaje que se desliza en la pantalla principal:',
-                style: TextStyle(color: ColoresApp.textoSecundario),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: controller,
-                style: const TextStyle(color: ColoresApp.textoPrimario),
-                maxLines: 2,
-                maxLength: 100,
-                decoration: InputDecoration(
-                  hintText: 'Ej: ¡Nuevas figuras disponibles!',
-                  hintStyle: TextStyle(color: ColoresApp.textoApagado),
-                  filled: true,
-                  fillColor: ColoresApp.superficieOscura,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'Editar Texto Marquee',
+                  style: TextStyle(
+                    color: ColoresApp.textoPrimario,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
             ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Este texto se mostrará deslizándose en la pantalla principal de todos los usuarios.',
+                  style: TextStyle(
+                    color: ColoresApp.textoSecundario,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 20),
+
+                Container(
+                  decoration: BoxDecoration(
+                    color: ColoresApp.superficieOscura,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: ColoresApp.bordeGris),
+                  ),
+                  child: TextField(
+                    controller: controller,
+                    style: const TextStyle(
+                      color: ColoresApp.textoPrimario,
+                      fontSize: 16,
+                    ),
+                    maxLines: 3,
+                    maxLength: 120,
+                    decoration: InputDecoration(
+                      hintText: 'Ej: ¡Nuevas figuras disponibles! Visita nuestro catálogo 🚀',
+                      hintStyle: TextStyle(
+                        color: ColoresApp.textoApagado,
+                        fontSize: 14,
+                      ),
+                      filled: false,
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.all(16),
+                      counterStyle: TextStyle(
+                        color: ColoresApp.textoSecundario,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Preview
+                Container(
+                  width: double.infinity,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
+                  ),
+                  child: Center(
+                    child: ValueListenableBuilder<TextEditingValue>(
+                      valueListenable: controller,
+                      builder: (context, value, child) {
+                        final texto = value.text.isEmpty
+                            ? 'Vista previa del texto...'
+                            : value.text;
+
+                        return Container(
+                          width: double.infinity,
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Text(
+                              texto,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.visible,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '↑ Vista previa de cómo se verá en la pantalla principal',
+                  style: TextStyle(
+                    color: ColoresApp.textoApagado,
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
           ),
           actions: [
             TextButton(
@@ -776,34 +889,255 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 style: TextStyle(color: ColoresApp.textoSecundario),
               ),
             ),
-            ElevatedButton(
-              onPressed: () async {
-                if (controller.text.trim().isNotEmpty) {
-                  try {
-                    Navigator.of(dialogContext).pop();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('✅ Texto marquee actualizado'),
-                        backgroundColor: ColoresApp.exito,
-                      ),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('❌ Error: $e'),
-                        backgroundColor: ColoresApp.error,
-                      ),
-                    );
-                  }
-                }
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
-              child: const Text('Guardar'),
+            ElevatedButton.icon(
+              onPressed: () => _guardarTextoMarqueeDebug(dialogContext, controller.text),
+              icon: const Icon(Icons.save, size: 18),
+              label: const Text('Guardar'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ColoresApp.cyanPrimario,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
             ),
           ],
         );
       },
     );
+  }
+
+  // MÉTODO DE GUARDADO MEJORADO CON DEBUG COMPLETO
+  Future<void> _guardarTextoMarqueeDebug(BuildContext dialogContext, String nuevoTexto) async {
+    print('🔄 Admin: Iniciando guardado de texto: "$nuevoTexto"');
+
+    if (nuevoTexto.trim().isEmpty) {
+      print('❌ Admin: Texto vacío, cancelando guardado');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('❌ El texto no puede estar vacío'),
+          backgroundColor: ColoresApp.error,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Mostrar indicador de carga
+      showDialog(
+        context: dialogContext,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: ColoresApp.tarjetaOscura,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(color: ColoresApp.cyanPrimario),
+                const SizedBox(height: 16),
+                const Text(
+                  'Guardando texto...',
+                  style: TextStyle(color: ColoresApp.textoPrimario),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      print('📡 Admin: Obteniendo configuración actual...');
+      // Obtener configuración actual
+      final configActual = await _firebaseService.obtenerConfiguracion().first;
+      print('✅ Admin: Configuración actual obtenida. Texto anterior: "${configActual.textoMarquee}"');
+
+      // Crear nueva configuración con el texto actualizado
+      final nuevaConfig = configActual.copiarCon(
+        textoMarquee: nuevoTexto.trim(),
+      );
+      print('📝 Admin: Nueva configuración creada con texto: "${nuevaConfig.textoMarquee}"');
+
+      // Guardar en Firebase
+      print('💾 Admin: Guardando en Firebase...');
+      final exito = await _firebaseService.actualizarConfiguracion(nuevaConfig);
+      print('🔍 Admin: Resultado del guardado: $exito');
+
+      // Cerrar indicador de carga
+      if (mounted) Navigator.of(context).pop();
+
+      if (exito) {
+        print('✅ Admin: Guardado exitoso, cerrando diálogo');
+        // Cerrar diálogo principal
+        if (mounted) Navigator.of(dialogContext).pop();
+
+        // Verificar que se guardó correctamente
+        print('🔍 Admin: Verificando que se guardó correctamente...');
+        Future.delayed(const Duration(milliseconds: 500), () async {
+          try {
+            final configVerificacion = await _firebaseService.obtenerConfiguracion().first;
+            print('✅ Admin: Verificación: Texto en Firebase: "${configVerificacion.textoMarquee}"');
+          } catch (e) {
+            print('❌ Admin: Error en verificación: $e');
+          }
+        });
+
+        // Mostrar mensaje de éxito
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '✅ Texto guardado: "${nuevoTexto.trim()}"',
+                      style: const TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: ColoresApp.exito,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Firebase devolvió false al guardar');
+      }
+    } catch (e) {
+      print('❌ Admin: ERROR COMPLETO guardando texto marquee: $e');
+
+      // Cerrar indicador de carga si está abierto
+      if (mounted && Navigator.of(context).canPop()) {
+        Navigator.of(context).pop();
+      }
+
+      // Mostrar error
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('❌ Error guardando texto'),
+                Text('Detalles: $e', style: TextStyle(fontSize: 12)),
+              ],
+            ),
+            backgroundColor: ColoresApp.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
+  }
+
+  // MÉTODO DE DEBUG COMPLETO DE FIREBASE
+  Future<void> _debugFirebase() async {
+    print('🐛 DEBUG: Iniciando diagnóstico completo...');
+
+    try {
+      // 1. Verificar conexión
+      print('1️⃣ Verificando conexión a Firestore...');
+      final conexionOk = await _firebaseService.verificarConexion();
+      print('   Conexión: $conexionOk');
+
+      // 2. Verificar si existe el documento
+      print('2️⃣ Verificando documento de configuración...');
+      final doc = await FirebaseFirestore.instance
+          .collection('configuraciones')
+          .doc('app')
+          .get();
+      print('   Documento existe: ${doc.exists}');
+
+      if (doc.exists) {
+        final data = doc.data();
+        print('   Datos del documento: $data');
+        print('   Texto marquee actual: "${data?['textoMarquee']}"');
+      } else {
+        print('   ⚠️ Documento no existe, creando configuración inicial...');
+
+        // Crear configuración inicial
+        final configInicial = ConfiguracionApp.porDefecto();
+        await FirebaseFirestore.instance
+            .collection('configuraciones')
+            .doc('app')
+            .set(configInicial.toFirestore());
+        print('   ✅ Configuración inicial creada');
+      }
+
+      // 3. Probar escritura directa
+      print('3️⃣ Probando escritura directa...');
+      final textoTest = 'TEXTO DE PRUEBA ${DateTime.now().millisecondsSinceEpoch}';
+      await FirebaseFirestore.instance
+          .collection('configuraciones')
+          .doc('app')
+          .set({
+        'textoMarquee': textoTest,
+        'fechaActualizacion': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+      print('   ✅ Escritura directa exitosa con texto: "$textoTest"');
+
+      // 4. Verificar escritura
+      print('4️⃣ Verificando escritura...');
+      final docDespues = await FirebaseFirestore.instance
+          .collection('configuraciones')
+          .doc('app')
+          .get();
+
+      if (docDespues.exists) {
+        final dataDespues = docDespues.data();
+        print('   ✅ Texto después de escribir: "${dataDespues?['textoMarquee']}"');
+      }
+
+      // 5. Probar stream
+      print('5️⃣ Probando stream...');
+      final stream = _firebaseService.obtenerConfiguracion();
+      final config = await stream.first;
+      print('   ✅ Stream funciona. Texto: "${config.textoMarquee}"');
+
+      // 6. Probar método de servicio
+      print('6️⃣ Probando método actualizarConfiguracion...');
+      final configPrueba = config.copiarCon(
+        textoMarquee: 'Prueba del método de servicio ${DateTime.now().millisecondsSinceEpoch}',
+      );
+      final resultadoServicio = await _firebaseService.actualizarConfiguracion(configPrueba);
+      print('   Resultado del servicio: $resultadoServicio');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Debug completado. Revisa la consola.'),
+            backgroundColor: ColoresApp.exito,
+          ),
+        );
+      }
+
+    } catch (e) {
+      print('❌ ERROR en debug: $e');
+      print('📍 Stack trace: ${StackTrace.current}');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error en debug: $e'),
+            backgroundColor: ColoresApp.error,
+          ),
+        );
+      }
+    }
   }
 
   void _mostrarEstadisticas() {
