@@ -4,7 +4,7 @@ import '../nucleo/constantes/colores_app.dart';
 import '../servicios/auth_service.dart';
 import '../servicios/firebase_service.dart';
 import '../modelos/configuracion_app.dart';
-import '../widgets/simple_scrolling_text.dart';
+import '../widgets/auto_scrolling_text.dart'; // ✅ IMPORTAR EL NUEVO WIDGET
 import 'login_screen.dart';
 import 'home_screen.dart';
 import 'gestion_usuarios_screen.dart';
@@ -60,7 +60,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header de administrador CON TEXTO ARREGLADO
+              // Header de administrador CORREGIDO
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -111,14 +111,15 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                           ),
                           const SizedBox(height: 4),
                           SizedBox(
-                            height: 18,
-                            child: SimpleScrollingText(
-                              text: 'Control total del sistema NC Controller',
+                            height: 20, // ✅ Altura fija para evitar overflow
+                            child: Text(
+                              'Control total del Sistema',
                               style: TextStyle(
                                 color: Colors.white.withOpacity(0.9),
                                 fontSize: 14,
                               ),
-                              duration: const Duration(seconds: 3),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -131,7 +132,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
 
               // CONFIGURACIÓN DE APLICACIÓN
               _seccionAdmin(
-                'CONFIGURACIÓN DE APLICACIÓN',
+                'CONFIGURACIÓN PUBLICIDAD',
                 Icons.settings,
                 ColoresApp.cyanPrimario,
                 [
@@ -259,7 +260,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
 
               const SizedBox(height: 24),
 
-              // INFORMACIÓN DEL SISTEMA - ARREGLADO
+              // INFORMACIÓN DEL SISTEMA
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -607,11 +608,12 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     );
   }
 
+  // ✅ TARJETA CORREGIDA CON AUTO-SCROLL
   Widget _tarjetaAdmin(String titulo, String descripcion, IconData icono, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 90, // Reducido más para evitar overflow
+        height: 105, // ✅ Altura optimizada
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: ColoresApp.tarjetaOscura,
@@ -627,8 +629,9 @@ class _PantallaAdminState extends State<PantallaAdmin> {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // Fila superior con icono y flecha
             Row(
               children: [
                 Container(
@@ -651,26 +654,43 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              titulo,
-              style: const TextStyle(
-                color: ColoresApp.textoPrimario,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
+
+            // Espacio para el texto con auto-scroll
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Título con auto-scroll
+                  Flexible(
+                    child: AutoScrollingText(
+                      text: titulo,
+                      style: const TextStyle(
+                        color: ColoresApp.textoPrimario,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      duration: const Duration(seconds: 3),
+                    ),
+                  ),
+
+                  const SizedBox(height: 4),
+
+                  // Descripción con auto-scroll
+                  Flexible(
+                    child: AutoScrollingText(
+                      text: descripcion,
+                      style: const TextStyle(
+                        color: ColoresApp.textoSecundario,
+                        fontSize: 11,
+                      ),
+                      maxLines: 1,
+                      duration: const Duration(seconds: 4),
+                    ),
+                  ),
+                ],
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              descripcion,
-              style: const TextStyle(
-                color: ColoresApp.textoSecundario,
-                fontSize: 10,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -705,7 +725,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     );
   }
 
-  // ARREGLADO: Diálogo para editar texto marquee SIN ERRORES
   void _mostrarDialogoTextoMarquee() {
     final TextEditingController controller = TextEditingController();
 
@@ -761,7 +780,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               onPressed: () async {
                 if (controller.text.trim().isNotEmpty) {
                   try {
-                    // Simulamos el guardado por ahora
                     Navigator.of(dialogContext).pop();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
@@ -990,7 +1008,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
             Icon(Icons.admin_panel_settings, color: ColoresApp.rojoAcento),
             const SizedBox(width: 8),
             const Text(
-              'Panel de Administración',
+              'Panel de Admin',
               style: TextStyle(color: ColoresApp.textoPrimario),
             ),
           ],

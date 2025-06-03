@@ -13,7 +13,7 @@ class ColoresApp {
   static const Color verdeAcento = Color(0xFF10B981);
   static const Color naranjaAcento = Color(0xFFF59E0B);
   static const Color rojoAcento = Color(0xFFEF4444);
-  static const Color rosaAcento = Color(0xFFEC4899);
+  static const Color rosaAcento = Color(0xFF833AB4);
 
   // Grises espaciales
   static const Color fondoOscuro = Color(0xFF0F0F0F);

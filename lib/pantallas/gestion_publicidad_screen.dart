@@ -6,6 +6,7 @@ import '../servicios/cloudinary_service.dart';
 import '../servicios/firebase_service.dart';
 import '../modelos/configuracion_app.dart';
 import '../nucleo/constantes/colores_app.dart';
+import '../widgets/auto_scrolling_text.dart'; // ✅ IMPORTAR EL WIDGET
 
 class PantallaGestionPublicidad extends StatefulWidget {
   const PantallaGestionPublicidad({super.key});
@@ -313,22 +314,27 @@ class _PantallaGestionPublicidadState extends State<PantallaGestionPublicidad> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Publicidad Activa',
-                  style: TextStyle(
+                // ✅ TITULO CON AUTO-SCROLL
+                AutoScrollingText(
+                  text: 'Publicidad Activa',
+                  style: const TextStyle(
                     color: ColoresApp.textoPrimario,
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                   ),
+                  duration: const Duration(seconds: 3),
                 ),
-                Text(
-                  _publicidadActiva
+                const SizedBox(height: 4),
+                // ✅ DESCRIPCION CON AUTO-SCROLL
+                AutoScrollingText(
+                  text: _publicidadActiva
                       ? 'La publicidad se mostrará a los usuarios'
                       : 'La publicidad está desactivada',
                   style: const TextStyle(
                     color: ColoresApp.textoSecundario,
                     fontSize: 12,
                   ),
+                  duration: const Duration(seconds: 4),
                 ),
               ],
             ),
@@ -343,6 +349,7 @@ class _PantallaGestionPublicidadState extends State<PantallaGestionPublicidad> {
     );
   }
 
+  // ✅ SECCION IMAGEN CORREGIDA
   Widget _construirSeccionImagen() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -354,26 +361,40 @@ class _PantallaGestionPublicidadState extends State<PantallaGestionPublicidad> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          // ✅ HEADER CON LAYOUT MEJORADO
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.image, color: ColoresApp.cyanPrimario),
-              const SizedBox(width: 8),
-              const Text(
-                'Imagen de Publicidad',
-                style: TextStyle(
-                  color: ColoresApp.textoPrimario,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+              Row(
+                children: [
+                  const Icon(Icons.image, color: ColoresApp.cyanPrimario),
+                  const SizedBox(width: 8),
+                  // ✅ TITULO CON AUTO-SCROLL
+                  Expanded(
+                    child: AutoScrollingText(
+                      text: 'Imagen de Publicidad',
+                      style: const TextStyle(
+                        color: ColoresApp.textoPrimario,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  ),
+                ],
               ),
-              const Spacer(),
-              ElevatedButton.icon(
-                onPressed: _seleccionarImagen,
-                icon: const Icon(Icons.upload, size: 18),
-                label: const Text('Seleccionar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ColoresApp.cyanPrimario,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              const SizedBox(height: 12),
+              // ✅ BOTON EN LINEA SEPARADA PARA EVITAR OVERFLOW
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _seleccionarImagen,
+                  icon: const Icon(Icons.upload, size: 18),
+                  label: const Text('SELECCIONAR IMAGEN'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ColoresApp.cyanPrimario,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
                 ),
               ),
             ],
@@ -423,14 +444,16 @@ class _PantallaGestionPublicidadState extends State<PantallaGestionPublicidad> {
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: ColoresApp.bordeGris, style: BorderStyle.solid),
               ),
-              child: const Column(
+              child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.image_not_supported, size: 48, color: ColoresApp.textoApagado),
-                  SizedBox(height: 8),
-                  Text(
-                    'No hay imagen seleccionada',
-                    style: TextStyle(color: ColoresApp.textoApagado),
+                  const Icon(Icons.image_not_supported, size: 48, color: ColoresApp.textoApagado),
+                  const SizedBox(height: 8),
+                  // ✅ TEXTO CON AUTO-SCROLL
+                  AutoScrollingText(
+                    text: 'No hay imagen seleccionada',
+                    style: const TextStyle(color: ColoresApp.textoApagado),
+                    duration: const Duration(seconds: 3),
                   ),
                 ],
               ),
@@ -451,16 +474,20 @@ class _PantallaGestionPublicidadState extends State<PantallaGestionPublicidad> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.edit, color: ColoresApp.cyanPrimario),
-              SizedBox(width: 8),
-              Text(
-                'Contenido de la Publicidad',
-                style: TextStyle(
-                  color: ColoresApp.textoPrimario,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              const Icon(Icons.edit, color: ColoresApp.cyanPrimario),
+              const SizedBox(width: 8),
+              // ✅ TITULO CON AUTO-SCROLL
+              Expanded(
+                child: AutoScrollingText(
+                  text: 'Contenido de la Publicidad',
+                  style: const TextStyle(
+                    color: ColoresApp.textoPrimario,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  duration: const Duration(seconds: 3),
                 ),
               ),
             ],
@@ -506,6 +533,7 @@ class _PantallaGestionPublicidadState extends State<PantallaGestionPublicidad> {
     );
   }
 
+  // ✅ SECCION EXPIRACION CORREGIDA
   Widget _construirSeccionExpiracion() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -517,47 +545,65 @@ class _PantallaGestionPublicidadState extends State<PantallaGestionPublicidad> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.schedule, color: ColoresApp.cyanPrimario),
-              SizedBox(width: 8),
-              Text(
-                'Fecha de Expiración (Opcional)',
-                style: TextStyle(
-                  color: ColoresApp.textoPrimario,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              const Icon(Icons.schedule, color: ColoresApp.cyanPrimario),
+              const SizedBox(width: 8),
+              // ✅ TITULO CON AUTO-SCROLL
+              Expanded(
+                child: AutoScrollingText(
+                  text: 'Fecha de Expiración (Opcional)',
+                  style: const TextStyle(
+                    color: ColoresApp.textoPrimario,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  duration: const Duration(seconds: 3),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 16),
 
-          Row(
+          // ✅ LAYOUT MEJORADO PARA EVITAR OVERFLOW
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  _fechaExpiracion != null
-                      ? 'Expira: ${_fechaExpiracion!.day}/${_fechaExpiracion!.month}/${_fechaExpiracion!.year}'
-                      : 'Sin fecha de expiración',
-                  style: const TextStyle(color: ColoresApp.textoSecundario),
-                ),
+              // ✅ TEXTO DE FECHA CON AUTO-SCROLL
+              AutoScrollingText(
+                text: _fechaExpiracion != null
+                    ? 'Expira: ${_fechaExpiracion!.day}/${_fechaExpiracion!.month}/${_fechaExpiracion!.year}'
+                    : 'Sin fecha de expiración',
+                style: const TextStyle(color: ColoresApp.textoSecundario),
+                duration: const Duration(seconds: 4),
               ),
-              if (_fechaExpiracion != null)
-                TextButton.icon(
-                  onPressed: () => setState(() => _fechaExpiracion = null),
-                  icon: const Icon(Icons.clear, size: 18),
-                  label: const Text('Quitar'),
-                  style: TextButton.styleFrom(foregroundColor: ColoresApp.error),
-                ),
-              ElevatedButton.icon(
-                onPressed: _seleccionarFechaExpiracion,
-                icon: const Icon(Icons.calendar_today, size: 18),
-                label: Text(_fechaExpiracion != null ? 'Cambiar' : 'Seleccionar'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ColoresApp.cyanPrimario,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                ),
+              const SizedBox(height: 12),
+
+              // ✅ BOTONES EN LAYOUT VERTICAL PARA EVITAR OVERFLOW
+              Row(
+                children: [
+                  if (_fechaExpiracion != null)
+                    Expanded(
+                      child: TextButton.icon(
+                        onPressed: () => setState(() => _fechaExpiracion = null),
+                        icon: const Icon(Icons.clear, size: 16),
+                        label: const Text('Quitar'),
+                        style: TextButton.styleFrom(foregroundColor: ColoresApp.error),
+                      ),
+                    ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _seleccionarFechaExpiracion,
+                      icon: const Icon(Icons.calendar_today, size: 16),
+                      label: Text(_fechaExpiracion != null ? 'Cambiar' : 'Seleccionar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ColoresApp.cyanPrimario,
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -605,16 +651,20 @@ class _PantallaGestionPublicidadState extends State<PantallaGestionPublicidad> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(Icons.preview, color: ColoresApp.verdeAcento),
-              SizedBox(width: 8),
-              Text(
-                'Vista Previa',
-                style: TextStyle(
-                  color: ColoresApp.textoPrimario,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
+              const Icon(Icons.preview, color: ColoresApp.verdeAcento),
+              const SizedBox(width: 8),
+              // ✅ TITULO CON AUTO-SCROLL
+              Expanded(
+                child: AutoScrollingText(
+                  text: 'Vista Previa',
+                  style: const TextStyle(
+                    color: ColoresApp.textoPrimario,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  duration: const Duration(seconds: 3),
                 ),
               ),
             ],
@@ -634,6 +684,7 @@ class _PantallaGestionPublicidadState extends State<PantallaGestionPublicidad> {
   }
 }
 
+// ✅ WIDGET PREVIEW MEJORADO
 class _WidgetPublicidadPreview extends StatelessWidget {
   final String titulo;
   final String descripcion;
@@ -693,22 +744,27 @@ class _WidgetPublicidadPreview extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  titulo,
+                // ✅ TITULO CON AUTO-SCROLL
+                AutoScrollingText(
+                  text: titulo,
                   style: const TextStyle(
                     color: ColoresApp.textoPrimario,
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
+                  duration: const Duration(seconds: 4),
                 ),
                 if (descripcion.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text(
-                    descripcion,
+                  // ✅ DESCRIPCION CON AUTO-SCROLL
+                  AutoScrollingText(
+                    text: descripcion,
                     style: const TextStyle(
                       color: ColoresApp.textoSecundario,
                       fontSize: 14,
                     ),
+                    maxLines: 2,
+                    duration: const Duration(seconds: 5),
                   ),
                 ],
                 const SizedBox(height: 12),
