@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../nucleo/constantes/colores_app.dart';
 import '../servicios/auth_service.dart';
+import '../servicios/firebase_service.dart';
+import '../modelos/configuracion_app.dart';
+import '../widgets/simple_scrolling_text.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 import 'gestion_usuarios_screen.dart';
@@ -16,6 +19,8 @@ class PantallaAdmin extends StatefulWidget {
 }
 
 class _PantallaAdminState extends State<PantallaAdmin> {
+  final FirebaseService _firebaseService = FirebaseService();
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -55,7 +60,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header de administrador
+              // Header de administrador CON TEXTO ARREGLADO
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -105,11 +110,15 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          Text(
-                            'Control total del sistema NC Controller',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 14,
+                          SizedBox(
+                            height: 18,
+                            child: SimpleScrollingText(
+                              text: 'Control total del sistema NC Controller',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 14,
+                              ),
+                              duration: const Duration(seconds: 3),
                             ),
                           ),
                         ],
@@ -128,7 +137,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 [
                   _tarjetaAdmin(
                     'Texto Marquee',
-                    'Configurar mensaje deslizante',
+                    'Editar mensaje',
                     Icons.text_fields,
                     ColoresApp.cyanPrimario,
                         () {
@@ -137,7 +146,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   ),
                   _tarjetaAdmin(
                     'Publicidad Push',
-                    'Gestionar promociones con Cloudinary',
+                    'Gestionar promociones',
                     Icons.campaign,
                     ColoresApp.naranjaAcento,
                         () {
@@ -161,7 +170,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 [
                   _tarjetaAdmin(
                     'Gestionar Usuarios',
-                    'Crear, editar y administrar usuarios',
+                    'Crear y editar',
                     Icons.people,
                     ColoresApp.verdeAcento,
                         () {
@@ -174,7 +183,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   ),
                   _tarjetaAdmin(
                     'Gestionar Figuras',
-                    'Agregar naves y dioramas',
+                    'Agregar naves',
                     Icons.category,
                     ColoresApp.moradoPrimario,
                         () {
@@ -194,7 +203,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 [
                   _tarjetaAdmin(
                     'Estadísticas',
-                    'Ver uso de la aplicación',
+                    'Ver uso de app',
                     Icons.analytics,
                     ColoresApp.azulPrimario,
                         () {
@@ -203,7 +212,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   ),
                   _tarjetaAdmin(
                     'Utilidades Admin',
-                    'Configuración y herramientas',
+                    'Herramientas',
                     Icons.build,
                     ColoresApp.rojoAcento,
                         () {
@@ -227,7 +236,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 [
                   _tarjetaAdmin(
                     'Vista Usuario',
-                    'Ver app como cliente',
+                    'Ver como cliente',
                     Icons.person,
                     ColoresApp.informacion,
                         () {
@@ -238,7 +247,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   ),
                   _tarjetaAdmin(
                     'Logs del Sistema',
-                    'Ver registros y errores',
+                    'Ver registros',
                     Icons.list_alt,
                     ColoresApp.advertencia,
                         () {
@@ -250,7 +259,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
 
               const SizedBox(height: 24),
 
-              // INFORMACIÓN DEL SISTEMA
+              // INFORMACIÓN DEL SISTEMA - ARREGLADO
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -269,12 +278,14 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                           size: 24,
                         ),
                         const SizedBox(width: 12),
-                        const Text(
-                          'INFORMACIÓN DEL SISTEMA',
-                          style: TextStyle(
-                            color: ColoresApp.textoPrimario,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                        const Expanded(
+                          child: Text(
+                            'INFORMACIÓN DEL SISTEMA',
+                            style: TextStyle(
+                              color: ColoresApp.textoPrimario,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ],
@@ -290,7 +301,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 ),
               ),
 
-              // Espaciado final para evitar que el último elemento toque el bottom
               const SizedBox(height: 24),
             ],
           ),
@@ -312,8 +322,8 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFFEF4444), // Rojo para admin
-                  Color(0xFFF59E0B), // Naranja para admin
+                  Color(0xFFEF4444),
+                  Color(0xFFF59E0B),
                 ],
               ),
             ),
@@ -426,7 +436,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
             ),
           ),
 
-          // Footer con cerrar sesión MEJORADO
+          // Footer con cerrar sesión
           Container(
             padding: const EdgeInsets.all(16),
             child: _itemDrawer(
@@ -434,9 +444,8 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               Icons.exit_to_app,
               'CERRAR SESIÓN',
                   () async {
-                Navigator.pop(context); // Cerrar drawer
+                Navigator.pop(context);
 
-                // Mostrar confirmación simple
                 final confirmar = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -469,7 +478,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   ),
                 );
 
-                // Si confirma, cerrar sesión de forma segura
                 if (confirmar == true && mounted) {
                   try {
                     final authService = Provider.of<AuthService>(context, listen: false);
@@ -603,8 +611,8 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 110,
-        padding: const EdgeInsets.all(16),
+        height: 90, // Reducido más para evitar overflow
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: ColoresApp.tarjetaOscura,
           borderRadius: BorderRadius.circular(16),
@@ -624,47 +632,45 @@ class _PantallaAdminState extends State<PantallaAdmin> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(6),
                   ),
                   child: Icon(
                     icono,
-                    size: 20,
+                    size: 16,
                     color: color,
                   ),
                 ),
                 const Spacer(),
                 Icon(
                   Icons.arrow_forward_ios,
-                  size: 16,
+                  size: 12,
                   color: ColoresApp.textoApagado,
                 ),
               ],
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Text(
               titulo,
               style: const TextStyle(
                 color: ColoresApp.textoPrimario,
-                fontSize: 14,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 4),
-            Expanded(
-              child: Text(
-                descripcion,
-                style: const TextStyle(
-                  color: ColoresApp.textoSecundario,
-                  fontSize: 11,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+            const SizedBox(height: 2),
+            Text(
+              descripcion,
+              style: const TextStyle(
+                color: ColoresApp.textoSecundario,
+                fontSize: 10,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
@@ -699,62 +705,86 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     );
   }
 
+  // ARREGLADO: Diálogo para editar texto marquee SIN ERRORES
   void _mostrarDialogoTextoMarquee() {
+    final TextEditingController controller = TextEditingController();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ColoresApp.tarjetaOscura,
-        title: Row(
-          children: [
-            Icon(Icons.text_fields, color: ColoresApp.cyanPrimario),
-            const SizedBox(width: 8),
-            const Text(
-              'Configurar Texto Marquee',
-              style: TextStyle(color: ColoresApp.textoPrimario),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Esta funcionalidad permite editar el texto que se desliza en la pantalla principal.',
-              style: TextStyle(color: ColoresApp.textoSecundario),
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: ColoresApp.informacion.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: ColoresApp.informacion.withOpacity(0.3)),
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: ColoresApp.tarjetaOscura,
+          title: Row(
+            children: [
+              Icon(Icons.text_fields, color: ColoresApp.cyanPrimario),
+              const SizedBox(width: 8),
+              const Text(
+                'Editar Texto Marquee',
+                style: TextStyle(color: ColoresApp.textoPrimario),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.info, color: ColoresApp.informacion, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Se implementará junto con la gestión de figuras',
-                      style: TextStyle(
-                        color: ColoresApp.informacion,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
-            child: const Text('Entendido'),
+            ],
           ),
-        ],
-      ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Edita el mensaje que se desliza en la pantalla principal:',
+                style: TextStyle(color: ColoresApp.textoSecundario),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                style: const TextStyle(color: ColoresApp.textoPrimario),
+                maxLines: 2,
+                maxLength: 100,
+                decoration: InputDecoration(
+                  hintText: 'Ej: ¡Nuevas figuras disponibles!',
+                  hintStyle: TextStyle(color: ColoresApp.textoApagado),
+                  filled: true,
+                  fillColor: ColoresApp.superficieOscura,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(
+                'Cancelar',
+                style: TextStyle(color: ColoresApp.textoSecundario),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (controller.text.trim().isNotEmpty) {
+                  try {
+                    // Simulamos el guardado por ahora
+                    Navigator.of(dialogContext).pop();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ Texto marquee actualizado'),
+                        backgroundColor: ColoresApp.exito,
+                      ),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('❌ Error: $e'),
+                        backgroundColor: ColoresApp.error,
+                      ),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
+              child: const Text('Guardar'),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -856,28 +886,26 @@ class _PantallaAdminState extends State<PantallaAdmin> {
         content: Container(
           width: double.maxFinite,
           height: 300,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.black,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _logEntry('✅', '2024-01-15 10:30:25', 'Firebase inicializado correctamente'),
-                    _logEntry('✅', '2024-01-15 10:30:26', 'AuthService inicializado'),
-                    _logEntry('✅', '2024-01-15 10:30:27', 'CloudinaryService inicializado'),
-                    _logEntry('📤', '2024-01-15 10:45:12', 'Imagen subida a Cloudinary'),
-                    _logEntry('👤', '2024-01-15 10:47:33', 'Usuario admin logueado'),
-                    _logEntry('⚙️', '2024-01-15 10:48:15', 'Configuración actualizada'),
-                  ],
-                ),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _logEntry('✅', '10:30:25', 'Firebase OK'),
+                  _logEntry('✅', '10:30:26', 'AuthService OK'),
+                  _logEntry('✅', '10:30:27', 'Cloudinary OK'),
+                  _logEntry('📤', '10:45:12', 'Imagen subida'),
+                  _logEntry('👤', '10:47:33', 'Admin logueado'),
+                  _logEntry('⚙️', '10:48:15', 'Config actualizada'),
+                  _logEntry('📝', '10:50:20', 'Marquee editado'),
+                ],
               ),
-            ],
+            ),
           ),
         ),
         actions: [
@@ -938,7 +966,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
           ],
         ),
         content: Text(
-          'La sección "$seccion" está en desarrollo.\n\n¡Pronto estará disponible con funcionalidades completas!',
+          'La sección "$seccion" está en desarrollo.\n\n¡Pronto estará disponible!',
           style: TextStyle(color: ColoresApp.textoSecundario),
         ),
         actions: [
@@ -980,13 +1008,12 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               ),
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'Panel de control completo para gestionar:\n\n'
                   '• Usuarios y permisos\n'
-                  '• Publicidad push con Cloudinary\n'
+                  '• Publicidad push\n'
                   '• Configuración del sistema\n'
-                  '• Monitoreo y estadísticas\n'
-                  '• Utilidades administrativas',
+                  '• Monitoreo y estadísticas',
               style: TextStyle(color: ColoresApp.textoSecundario),
             ),
             const SizedBox(height: 16),

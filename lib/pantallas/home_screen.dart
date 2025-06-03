@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../nucleo/constantes/colores_app.dart';
 import '../servicios/auth_service.dart';
 import '../servicios/firebase_service.dart';
 import '../modelos/configuracion_app.dart';
 import '../widgets/publicidad_push_widget.dart';
+import '../widgets/simple_scrolling_text.dart';
 import 'login_screen.dart';
 
 class PantallaHome extends StatefulWidget {
@@ -24,14 +26,11 @@ class _PantallaHomeState extends State<PantallaHome> {
   }
 
   void _mostrarPublicidadSiCorresponde() {
-    // Esperar un poco para que la pantalla se cargue completamente
     Future.delayed(const Duration(milliseconds: 1500), () {
       if (mounted && !_publicidadMostrada) {
         final firebaseService = FirebaseService();
 
-        // Escuchar la configuración para obtener la publicidad
         firebaseService.obtenerConfiguracion().listen((config) {
-          // CORREGIDO: Cambié deberíaMostrarse por deberiaMostrarse
           if (mounted && !_publicidadMostrada && config.publicidadPush.deberiaMostrarse) {
             _publicidadMostrada = true;
             PublicidadPushModal.mostrar(context, config.publicidadPush);
@@ -72,238 +71,235 @@ class _PantallaHomeState extends State<PantallaHome> {
             ],
           ),
         ),
-        child: Stack(
-          children: [
-            SingleChildScrollView(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Texto marquee dinámico MEJORADO
+              StreamBuilder<ConfiguracionApp>(
+                stream: FirebaseService().obtenerConfiguracion(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Cargando...',
+                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                      ),
+                    );
+                  }
+
+                  return Container(
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
+                    ),
+                    child: Center(
+                      child: SimpleScrollingText(
+                        text: snapshot.data!.textoMarquee,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        duration: const Duration(seconds: 6),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 32),
+
+              const Text(
+                'CENTRO DE CONTROL',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Controla tus figuras futuristas',
+                style: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Tarjetas principales
+              Row(
                 children: [
-                  // Texto marquee dinámico de Firebase
-                  StreamBuilder<ConfiguracionApp>(
-                    stream: FirebaseService().obtenerConfiguracion(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return Container(
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: Colors.black,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Center(
-                            child: Text(
-                              'Cargando...',
-                              style: TextStyle(color: Colors.white, fontSize: 14),
-                            ),
-                          ),
-                        );
-                      }
-
-                      return Container(
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: Colors.black,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
-                        ),
-                        child: Center(
-                          child: _TextoMarquee(
-                            texto: snapshot.data!.textoMarquee,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 32),
-
-                  const Text(
-                    'CENTRO DE CONTROL',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
+                  Expanded(
+                    child: _tarjetaNavegacion(
+                      'NAVES',
+                      Icons.rocket,
+                      ColoresApp.azulPrimario,
+                          () {
+                        _mostrarEnConstruccion(context, 'Naves');
+                      },
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Controla tus figuras futuristas',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 16,
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _tarjetaNavegacion(
+                      'DIORAMAS',
+                      Icons.landscape,
+                      ColoresApp.moradoPrimario,
+                          () {
+                        _mostrarEnConstruccion(context, 'Dioramas');
+                      },
                     ),
                   ),
-                  const SizedBox(height: 32),
-
-                  // Tarjetas principales
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _tarjetaNavegacion(
-                          'NAVES',
-                          Icons.rocket,
-                          ColoresApp.azulPrimario,
-                              () {
-                            print("Navegando a NAVES");
-                            _mostrarEnConstruccion(context, 'Naves');
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _tarjetaNavegacion(
-                          'DIORAMAS',
-                          Icons.landscape,
-                          ColoresApp.moradoPrimario,
-                              () {
-                            print("Navegando a DIORAMAS");
-                            _mostrarEnConstruccion(context, 'Dioramas');
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _tarjetaNavegacion(
-                          'BLUETOOTH',
-                          Icons.bluetooth,
-                          ColoresApp.cyanPrimario,
-                              () {
-                            print("Navegando a BLUETOOTH");
-                            _mostrarEnConstruccion(context, 'Bluetooth');
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _tarjetaNavegacion(
-                          'PERFIL',
-                          Icons.person,
-                          ColoresApp.verdeAcento,
-                              () {
-                            print("Navegando a PERFIL");
-                            _mostrarEnConstruccion(context, 'Perfil');
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Sección de estado del sistema
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: ColoresApp.tarjetaOscura,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: ColoresApp.bordeGris),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.monitor_heart,
-                              color: ColoresApp.cyanPrimario,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'ESTADO DEL SISTEMA',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        _itemEstado('Firebase', true, 'Conectado'),
-                        _itemEstado('Bluetooth', false, 'Desconectado'),
-                        _itemEstado('Figuras', true, '4 disponibles'),
-                        _itemEstado('Cloudinary', true, 'Imágenes activas'),
-                      ],
-                    ),
-                  ),
-
-                  // Sección de accesos rápidos
-                  const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: ColoresApp.tarjetaOscura,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: ColoresApp.bordeGris),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.link,
-                              color: ColoresApp.verdeAcento,
-                              size: 24,
-                            ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'ENLACES RÁPIDOS',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _botonEnlace(
-                                'Instagram',
-                                Icons.camera_alt,
-                                ColoresApp.rosaAcento,
-                                'https://instagram.com/naboocustoms',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _botonEnlace(
-                                'Facebook',
-                                Icons.facebook,
-                                ColoresApp.azulPrimario,
-                                'https://facebook.com/naboocustoms',
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: double.infinity,
-                          child: _botonEnlace(
-                            'Catálogo en Drive',
-                            Icons.folder_open,
-                            ColoresApp.naranjaAcento,
-                            'https://drive.google.com/catalogo-naboocustoms',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Espaciado final
-                  const SizedBox(height: 100),
                 ],
               ),
-            ),
-          ],
+              const SizedBox(height: 16),
+
+              Row(
+                children: [
+                  Expanded(
+                    child: _tarjetaNavegacion(
+                      'BLUETOOTH',
+                      Icons.bluetooth,
+                      ColoresApp.cyanPrimario,
+                          () {
+                        _mostrarEnConstruccion(context, 'Bluetooth');
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _tarjetaNavegacion(
+                      'PERFIL',
+                      Icons.person,
+                      ColoresApp.verdeAcento,
+                          () {
+                        _mostrarEnConstruccion(context, 'Perfil');
+                      },
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
+
+              // Sección de estado del sistema
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ColoresApp.tarjetaOscura,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: ColoresApp.bordeGris),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.monitor_heart,
+                          color: ColoresApp.cyanPrimario,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'ESTADO DEL SISTEMA',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _itemEstado('Firebase', true, 'Conectado'),
+                    _itemEstado('Bluetooth', false, 'Desconectado'),
+                    _itemEstado('Figuras', true, '4 disponibles'),
+                    _itemEstado('Cloudinary', true, 'Imágenes activas'),
+                  ],
+                ),
+              ),
+
+              // Sección de accesos rápidos CON ENLACES FUNCIONALES
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: ColoresApp.tarjetaOscura,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: ColoresApp.bordeGris),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.link,
+                          color: ColoresApp.verdeAcento,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 12),
+                        const Text(
+                          'ENLACES RÁPIDOS',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _botonEnlace(
+                            'Instagram',
+                            Icons.camera_alt,
+                            ColoresApp.rosaAcento,
+                            'https://www.instagram.com/naboo.customs/',
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _botonEnlace(
+                            'Facebook',
+                            Icons.facebook,
+                            ColoresApp.azulPrimario,
+                            'https://www.facebook.com/Nabbo.customs/',
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: _botonEnlace(
+                        'Catálogo en Drive',
+                        Icons.folder_open,
+                        ColoresApp.naranjaAcento,
+                        'https://drive.google.com/drive/folders/1bzZ8g6QDotavLFLg9h5puTd4bvqoBCQL',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 100),
+            ],
+          ),
         ),
       ),
     );
@@ -370,7 +366,6 @@ class _PantallaHomeState extends State<PantallaHome> {
                   'INICIO',
                       () {
                     Navigator.pop(context);
-                    print("Ya estás en INICIO");
                   },
                 ),
                 _itemDrawer(
@@ -431,9 +426,8 @@ class _PantallaHomeState extends State<PantallaHome> {
               Icons.exit_to_app,
               'CERRAR SESIÓN',
                   () async {
-                Navigator.pop(context); // Cerrar drawer
+                Navigator.pop(context);
 
-                // Mostrar confirmación simple
                 final confirmar = await showDialog<bool>(
                   context: context,
                   builder: (context) => AlertDialog(
@@ -466,7 +460,6 @@ class _PantallaHomeState extends State<PantallaHome> {
                   ),
                 );
 
-                // Si confirma, cerrar sesión de forma segura
                 if (confirmar == true && mounted) {
                   try {
                     final authService = Provider.of<AuthService>(context, listen: false);
@@ -497,7 +490,6 @@ class _PantallaHomeState extends State<PantallaHome> {
                       }
                     }
                   } catch (e) {
-                    print('⚠️ Error cerrando sesión: $e');
                     if (mounted) {
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(builder: (context) => const PantallaLogin()),
@@ -638,10 +630,7 @@ class _PantallaHomeState extends State<PantallaHome> {
 
   Widget _botonEnlace(String titulo, IconData icono, Color color, String url) {
     return ElevatedButton.icon(
-      onPressed: () {
-        // TODO: Implementar apertura de URLs
-        _mostrarInfo(context, 'Enlace: $titulo', 'Se abriría: $url');
-      },
+      onPressed: () => _abrirEnlace(url, titulo),
       icon: Icon(icono, size: 18),
       label: Text(titulo),
       style: ElevatedButton.styleFrom(
@@ -650,6 +639,64 @@ class _PantallaHomeState extends State<PantallaHome> {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
       ),
     );
+  }
+
+  // FUNCIÓN MEJORADA PARA ABRIR ENLACES
+  Future<void> _abrirEnlace(String url, String nombre) async {
+    try {
+      print('🔗 Intentando abrir: $url');
+
+      final uri = Uri.parse(url);
+
+      // Verificar si se puede abrir la URL
+      bool canLaunch = await canLaunchUrl(uri);
+      print('🔍 CanLaunch: $canLaunch');
+
+      if (canLaunch) {
+        bool launched = await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+
+        if (launched) {
+          print('✅ Enlace abierto correctamente');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Abriendo $nombre...'),
+                backgroundColor: ColoresApp.exito,
+                duration: const Duration(seconds: 1),
+              ),
+            );
+          }
+        } else {
+          throw Exception('No se pudo abrir el enlace');
+        }
+      } else {
+        throw Exception('No hay aplicación disponible para abrir este enlace');
+      }
+    } catch (e) {
+      print('❌ Error abriendo enlace: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Error abriendo $nombre'),
+                Text(
+                  'URL: $url',
+                  style: const TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+            backgroundColor: ColoresApp.error,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   void _mostrarEnConstruccion(BuildContext context, String seccion) {
@@ -728,79 +775,6 @@ class _PantallaHomeState extends State<PantallaHome> {
           ),
         ],
       ),
-    );
-  }
-
-  void _mostrarInfo(BuildContext context, String titulo, String mensaje) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ColoresApp.tarjetaOscura,
-        title: Text(titulo, style: TextStyle(color: ColoresApp.textoPrimario)),
-        content: Text(mensaje, style: TextStyle(color: ColoresApp.textoSecundario)),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Widget personalizado para texto marquee
-class _TextoMarquee extends StatefulWidget {
-  final String texto;
-
-  const _TextoMarquee({required this.texto});
-
-  @override
-  State<_TextoMarquee> createState() => _TextoMarqueeState();
-}
-
-class _TextoMarqueeState extends State<_TextoMarquee>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(seconds: 10),
-      vsync: this,
-    );
-    _animation = Tween<double>(begin: 1.0, end: -1.0).animate(_controller);
-    _controller.repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Transform.translate(
-          offset: Offset(_animation.value * MediaQuery.of(context).size.width, 0),
-          child: Text(
-            widget.texto,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-            overflow: TextOverflow.visible,
-            maxLines: 1,
-          ),
-        );
-      },
     );
   }
 }
