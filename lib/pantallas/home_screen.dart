@@ -17,7 +17,8 @@ class PantallaHome extends StatefulWidget {
 }
 
 class _PantallaHomeState extends State<PantallaHome> {
-  bool _publicidadMostrada = false;
+  // ✅ CORREGIDO: Variables para controlar publicidad por sesión
+  bool _publicidadMostradaEnEstaSession = false;
 
   @override
   void initState() {
@@ -25,18 +26,33 @@ class _PantallaHomeState extends State<PantallaHome> {
     _mostrarPublicidadSiCorresponde();
   }
 
+  // ✅ MÉTODO SIMPLIFICADO: Mostrar publicidad una vez por sesión
   void _mostrarPublicidadSiCorresponde() {
+    // Esperar un poco para que la pantalla se estabilice
     Future.delayed(const Duration(milliseconds: 1500), () {
-      if (mounted && !_publicidadMostrada) {
-        final firebaseService = FirebaseService();
+      if (!mounted || _publicidadMostradaEnEstaSession) return;
 
-        firebaseService.obtenerConfiguracion().listen((config) {
-          if (mounted && !_publicidadMostrada && config.publicidadPush.deberiaMostrarse) {
-            _publicidadMostrada = true;
-            PublicidadPushModal.mostrar(context, config.publicidadPush);
-          }
-        });
-      }
+      final firebaseService = FirebaseService();
+
+      firebaseService.obtenerConfiguracion().listen((config) {
+        if (!mounted || _publicidadMostradaEnEstaSession) return;
+
+        final publicidad = config.publicidadPush;
+
+        // ✅ NUEVA LÓGICA: Verificar si debe mostrar y no se ha mostrado en esta sesión
+        if (publicidad.deberiaMostrarse && publicidad.titulo.trim().isNotEmpty) {
+          print('📢 Mostrando publicidad: ${publicidad.titulo}');
+
+          // Marcar como mostrada en esta sesión
+          _publicidadMostradaEnEstaSession = true;
+
+          PublicidadPushModal.mostrar(context, publicidad);
+        } else {
+          print('❌ Publicidad no se muestra. Activa: ${publicidad.activa}, Título: "${publicidad.titulo}"');
+        }
+      }).onError((error) {
+        print('❌ Error obteniendo configuración para publicidad: $error');
+      });
     });
   }
 
@@ -76,79 +92,75 @@ class _PantallaHomeState extends State<PantallaHome> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Texto marquee dinámico CORREGIDO Y RÁPIDO
-              // ✅ MARQUEE SIMPLE Y FUNCIONAL
-          StreamBuilder<ConfiguracionApp>(
-          stream: FirebaseService().obtenerConfiguracion(),
-            builder: (context, snapshot) {
-              print('🏠 Home: StreamBuilder ejecutado - hasData: ${snapshot.hasData}');
+              // ✅ MARQUEE: Mantener funcionando
+              StreamBuilder<ConfiguracionApp>(
+                stream: FirebaseService().obtenerConfiguracion(),
+                builder: (context, snapshot) {
+                  print('🏠 Home: StreamBuilder ejecutado - hasData: ${snapshot.hasData}');
 
-              // Loading
-              if (!snapshot.hasData) {
-                return Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'Cargando información...',
-                      style: TextStyle(color: Colors.white, fontSize: 14),
+                  if (!snapshot.hasData) {
+                    return Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Cargando información...',
+                          style: TextStyle(color: Colors.white, fontSize: 14),
+                        ),
+                      ),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Container(
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: ColoresApp.error.withOpacity(0.3)),
+                      ),
+                      child: const Center(
+                        child: Text(
+                          'Error cargando configuración',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ),
+                    );
+                  }
+
+                  final configuracion = snapshot.data!;
+                  final textoMarquee = configuracion.textoMarquee.isNotEmpty
+                      ? configuracion.textoMarquee
+                      : '¡Bienvenido a Naboo Customs! Controla tus figuras futuristas con tecnología avanzada 🚀';
+
+                  print('🎨 Home: Texto completo: "$textoMarquee" (${textoMarquee.length} caracteres)');
+
+                  return Container(
+                    key: ValueKey(textoMarquee),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                  ),
-                );
-              }
-
-              // Error
-              if (snapshot.hasError) {
-                return Container(
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: ColoresApp.error.withOpacity(0.3)),
-                  ),
-                  child: const Center(
-                    child: Text(
-                      'Error cargando configuración',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    child: CompleteTextMarquee(
+                      text: textoMarquee,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        letterSpacing: 0.5,
+                      ),
+                      duration: const Duration(seconds: 10),
+                      height: 40,
+                      backgroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
-                  ),
-                );
-              }
-
-              final configuracion = snapshot.data!;
-              final textoMarquee = configuracion.textoMarquee.isNotEmpty
-                  ? configuracion.textoMarquee
-                  : '¡Bienvenido a Naboo Customs! Controla tus figuras futuristas con tecnología avanzada 🚀';
-
-              print('🎨 Home: Texto completo: "$textoMarquee" (${textoMarquee.length} caracteres)');
-
-              // 🎯 MARQUEE QUE MUESTRA TODO EL TEXTO
-              return Container(
-                key: ValueKey(textoMarquee),
-                decoration: BoxDecoration(
-                  border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: CompleteTextMarquee(
-                  text: textoMarquee,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.5,
-                  ),
-                  duration: const Duration(seconds: 10), // Más tiempo para textos largos
-                  height: 40,
-                  backgroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                ),
-              );
-            },
-          ),
+                  );
+                },
+              ),
               const SizedBox(height: 32),
 
               const Text(
@@ -225,7 +237,57 @@ class _PantallaHomeState extends State<PantallaHome> {
               ),
               const SizedBox(height: 32),
 
-              // Sección de estado del sistema
+              // ✅ NUEVA SECCIÓN: Estado de publicidad (para debugging)
+              StreamBuilder<ConfiguracionApp>(
+                stream: FirebaseService().obtenerConfiguracion(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) return const SizedBox.shrink();
+
+                  final publicidad = snapshot.data!.publicidadPush;
+
+                  return Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: ColoresApp.informacion.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: ColoresApp.informacion.withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.info_outline, size: 16, color: ColoresApp.informacion),
+                            const SizedBox(width: 8),
+                            const Text(
+                              'ESTADO PUBLICIDAD',
+                              style: TextStyle(
+                                color: ColoresApp.informacion,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Activa: ${publicidad.activa}\n'
+                              'Título: "${publicidad.titulo}"\n'
+                              'Debería mostrarse: ${publicidad.deberiaMostrarse}\n',
+
+                          style: const TextStyle(
+                            color: ColoresApp.textoSecundario,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+
+              // Resto del contenido...
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -263,7 +325,6 @@ class _PantallaHomeState extends State<PantallaHome> {
                 ),
               ),
 
-              // Sección de accesos rápidos CON ENLACES FUNCIONALES
               const SizedBox(height: 24),
               Container(
                 padding: const EdgeInsets.all(16),
@@ -337,12 +398,12 @@ class _PantallaHomeState extends State<PantallaHome> {
     );
   }
 
+  // ✅ RESTO DE MÉTODOS IGUALES...
   Widget _construirDrawer(BuildContext context) {
     return Drawer(
       backgroundColor: const Color(0xFF1A1A1A),
       child: Column(
         children: [
-          // Header del drawer
           Container(
             height: 200,
             decoration: const BoxDecoration(
@@ -386,142 +447,78 @@ class _PantallaHomeState extends State<PantallaHome> {
               ),
             ),
           ),
-
-          // Items del menú
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
-                _itemDrawer(
-                  context,
-                  Icons.home,
-                  'INICIO',
-                      () {
-                    Navigator.pop(context);
-                  },
-                ),
-                _itemDrawer(
-                  context,
-                  Icons.rocket,
-                  'NAVES',
-                      () {
-                    Navigator.pop(context);
-                    _mostrarEnConstruccion(context, 'Naves');
-                  },
-                ),
-                _itemDrawer(
-                  context,
-                  Icons.landscape,
-                  'DIORAMAS',
-                      () {
-                    Navigator.pop(context);
-                    _mostrarEnConstruccion(context, 'Dioramas');
-                  },
-                ),
-                _itemDrawer(
-                  context,
-                  Icons.bluetooth,
-                  'BLUETOOTH',
-                      () {
-                    Navigator.pop(context);
-                    _mostrarEnConstruccion(context, 'Bluetooth');
-                  },
-                ),
+                _itemDrawer(context, Icons.home, 'INICIO', () => Navigator.pop(context)),
+                _itemDrawer(context, Icons.rocket, 'NAVES', () {
+                  Navigator.pop(context);
+                  _mostrarEnConstruccion(context, 'Naves');
+                }),
+                _itemDrawer(context, Icons.landscape, 'DIORAMAS', () {
+                  Navigator.pop(context);
+                  _mostrarEnConstruccion(context, 'Dioramas');
+                }),
+                _itemDrawer(context, Icons.bluetooth, 'BLUETOOTH', () {
+                  Navigator.pop(context);
+                  _mostrarEnConstruccion(context, 'Bluetooth');
+                }),
                 const Divider(color: Color(0xFF404040)),
-                _itemDrawer(
-                  context,
-                  Icons.person,
-                  'PERFIL',
-                      () {
-                    Navigator.pop(context);
-                    _mostrarEnConstruccion(context, 'Perfil');
-                  },
-                ),
-                _itemDrawer(
-                  context,
-                  Icons.help_outline,
-                  'AYUDA',
-                      () {
-                    Navigator.pop(context);
-                    _mostrarAyuda(context);
-                  },
-                ),
+                _itemDrawer(context, Icons.person, 'PERFIL', () {
+                  Navigator.pop(context);
+                  _mostrarEnConstruccion(context, 'Perfil');
+                }),
+                _itemDrawer(context, Icons.help_outline, 'AYUDA', () {
+                  Navigator.pop(context);
+                  _mostrarAyuda(context);
+                }),
               ],
             ),
           ),
-
-          // Footer con cerrar sesión
           Container(
             padding: const EdgeInsets.all(16),
-            child: _itemDrawer(
-              context,
-              Icons.exit_to_app,
-              'CERRAR SESIÓN',
-                  () async {
-                Navigator.pop(context);
-
-                final confirmar = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: const Color(0xFF252525),
-                    title: const Text(
-                      'Cerrar Sesión',
-                      style: TextStyle(color: Colors.white),
+            child: _itemDrawer(context, Icons.exit_to_app, 'CERRAR SESIÓN', () async {
+              Navigator.pop(context);
+              final confirmar = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  backgroundColor: const Color(0xFF252525),
+                  title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.white)),
+                  content: const Text('¿Estás seguro de que quieres cerrar sesión?', style: TextStyle(color: Colors.grey)),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
                     ),
-                    content: const Text(
-                      '¿Estás seguro de que quieres cerrar sesión?',
-                      style: TextStyle(color: Colors.grey),
+                    ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                      child: const Text('Cerrar Sesión'),
                     ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text(
-                          'Cancelar',
-                          style: TextStyle(color: Colors.grey),
+                  ],
+                ),
+              );
+
+              if (confirmar == true && mounted) {
+                try {
+                  final authService = Provider.of<AuthService>(context, listen: false);
+                  await authService.cerrarSesion();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.white, size: 20),
+                            SizedBox(width: 8),
+                            Text('¡Hasta luego!'),
+                          ],
                         ),
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 1),
                       ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Cerrar Sesión'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirmar == true && mounted) {
-                  try {
-                    final authService = Provider.of<AuthService>(context, listen: false);
-                    await authService.cerrarSesion();
-
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Row(
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.white, size: 20),
-                              SizedBox(width: 8),
-                              Text('¡Hasta luego!'),
-                            ],
-                          ),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-
-                      await Future.delayed(const Duration(milliseconds: 500));
-
-                      if (mounted) {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (context) => const PantallaLogin()),
-                              (route) => false,
-                        );
-                      }
-                    }
-                  } catch (e) {
+                    );
+                    await Future.delayed(const Duration(milliseconds: 500));
                     if (mounted) {
                       Navigator.of(context).pushAndRemoveUntil(
                         MaterialPageRoute(builder: (context) => const PantallaLogin()),
@@ -529,10 +526,16 @@ class _PantallaHomeState extends State<PantallaHome> {
                       );
                     }
                   }
+                } catch (e) {
+                  if (mounted) {
+                    Navigator.of(context).pushAndRemoveUntil(
+                      MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                          (route) => false,
+                    );
+                  }
                 }
-              },
-              esLogout: true,
-            ),
+              }
+            }, esLogout: true),
           ),
         ],
       ),
@@ -547,24 +550,10 @@ class _PantallaHomeState extends State<PantallaHome> {
         color: Colors.transparent,
       ),
       child: ListTile(
-        leading: Icon(
-          icono,
-          color: esLogout ? Colors.red : Colors.cyan,
-          size: 24,
-        ),
-        title: Text(
-          titulo,
-          style: TextStyle(
-            color: esLogout ? Colors.red : Colors.white,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
+        leading: Icon(icono, color: esLogout ? Colors.red : Colors.cyan, size: 24),
+        title: Text(titulo, style: TextStyle(color: esLogout ? Colors.red : Colors.white, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
         onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         hoverColor: Colors.cyan.withOpacity(0.1),
         splashColor: Colors.cyan.withOpacity(0.2),
       ),
@@ -597,22 +586,10 @@ class _PantallaHomeState extends State<PantallaHome> {
                 color: color.withOpacity(0.1),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icono,
-                size: 40,
-                color: color,
-              ),
+              child: Icon(icono, size: 40, color: color),
             ),
             const SizedBox(height: 12),
-            Text(
-              titulo,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-            ),
+            Text(titulo, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
           ],
         ),
       ),
@@ -637,21 +614,8 @@ class _PantallaHomeState extends State<PantallaHome> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  titulo,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  descripcion,
-                  style: const TextStyle(
-                    color: Colors.grey,
-                    fontSize: 12,
-                  ),
-                ),
+                Text(titulo, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+                Text(descripcion, style: const TextStyle(color: Colors.grey, fontSize: 12)),
               ],
             ),
           ),
@@ -673,23 +637,15 @@ class _PantallaHomeState extends State<PantallaHome> {
     );
   }
 
-  // FUNCIÓN MEJORADA PARA ABRIR ENLACES
   Future<void> _abrirEnlace(String url, String nombre) async {
     try {
       print('🔗 Intentando abrir: $url');
-
       final uri = Uri.parse(url);
-
-      // Verificar si se puede abrir la URL
       bool canLaunch = await canLaunchUrl(uri);
       print('🔍 CanLaunch: $canLaunch');
 
       if (canLaunch) {
-        bool launched = await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
-
+        bool launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
         if (launched) {
           print('✅ Enlace abierto correctamente');
           if (mounted) {
@@ -717,10 +673,7 @@ class _PantallaHomeState extends State<PantallaHome> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Error abriendo $nombre'),
-                Text(
-                  'URL: $url',
-                  style: const TextStyle(fontSize: 12),
-                ),
+                Text('URL: $url', style: const TextStyle(fontSize: 12)),
               ],
             ),
             backgroundColor: ColoresApp.error,
@@ -740,16 +693,10 @@ class _PantallaHomeState extends State<PantallaHome> {
           children: [
             Icon(Icons.construction, color: ColoresApp.naranjaAcento),
             const SizedBox(width: 8),
-            Text(
-              'En Construcción',
-              style: TextStyle(color: ColoresApp.textoPrimario),
-            ),
+            Text('En Construcción', style: TextStyle(color: ColoresApp.textoPrimario)),
           ],
         ),
-        content: Text(
-          'La sección "$seccion" está en desarrollo.\n\n¡Pronto estará disponible con funcionalidades completas!',
-          style: TextStyle(color: ColoresApp.textoSecundario),
-        ),
+        content: Text('La sección "$seccion" está en desarrollo.\n\n¡Pronto estará disponible con funcionalidades completas!', style: TextStyle(color: ColoresApp.textoSecundario)),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -770,33 +717,16 @@ class _PantallaHomeState extends State<PantallaHome> {
           children: [
             Icon(Icons.help, color: ColoresApp.cyanPrimario),
             const SizedBox(width: 8),
-            Text(
-              'Ayuda',
-              style: TextStyle(color: ColoresApp.textoPrimario),
-            ),
+            Text('Ayuda', style: TextStyle(color: ColoresApp.textoPrimario)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Naboo Customs Controller',
-              style: TextStyle(
-                color: ColoresApp.textoPrimario,
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
-            ),
+            Text('Naboo Customs Controller', style: TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 8),
-            Text(
-              'Aplicación para controlar figuras con Arduino y Bluetooth.\n\n'
-                  '• Conecta tus figuras vía Bluetooth\n'
-                  '• Controla LEDs y música\n'
-                  '• Activa efectos de humo\n'
-                  '• Gestiona tu colección',
-              style: TextStyle(color: ColoresApp.textoSecundario),
-            ),
+            Text('Aplicación para controlar figuras con Arduino y Bluetooth.\n\n• Conecta tus figuras vía Bluetooth\n• Controla LEDs y música\n• Activa efectos de humo\n• Gestiona tu colección', style: TextStyle(color: ColoresApp.textoSecundario)),
           ],
         ),
         actions: [
