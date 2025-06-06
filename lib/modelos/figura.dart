@@ -1,3 +1,4 @@
+// Archivo: lib/modelos/figura.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Figura {
@@ -5,7 +6,10 @@ class Figura {
   final String nombre;
   final String tipo; // "nave" o "diorama"
   final String descripcion;
-  final String imagen;
+  final String imagenSeleccion; // Imagen principal para catálogo
+  final List<String> imagenesExtra; // Hasta 2 imágenes extra para la plantilla
+  final String imagenSeleccionPublicId; // Para Cloudinary
+  final List<String> imagenesExtraPublicIds; // Para Cloudinary
   final ConfiguracionBluetooth bluetoothConfig;
   final ComponentesFigura componentes;
   final bool activo;
@@ -16,7 +20,10 @@ class Figura {
     required this.nombre,
     required this.tipo,
     required this.descripcion,
-    required this.imagen,
+    required this.imagenSeleccion,
+    required this.imagenesExtra,
+    required this.imagenSeleccionPublicId,
+    required this.imagenesExtraPublicIds,
     required this.bluetoothConfig,
     required this.componentes,
     required this.activo,
@@ -31,7 +38,10 @@ class Figura {
       nombre: data['nombre'] ?? '',
       tipo: data['tipo'] ?? 'nave',
       descripcion: data['descripcion'] ?? '',
-      imagen: data['imagen'] ?? '',
+      imagenSeleccion: data['imagenSeleccion'] ?? '',
+      imagenesExtra: List<String>.from(data['imagenesExtra'] ?? []),
+      imagenSeleccionPublicId: data['imagenSeleccionPublicId'] ?? '',
+      imagenesExtraPublicIds: List<String>.from(data['imagenesExtraPublicIds'] ?? []),
       bluetoothConfig: ConfiguracionBluetooth.fromMap(data['bluetoothConfig'] ?? {}),
       componentes: ComponentesFigura.fromMap(data['componentes'] ?? {}),
       activo: data['activo'] ?? true,
@@ -44,12 +54,44 @@ class Figura {
       'nombre': nombre,
       'tipo': tipo,
       'descripcion': descripcion,
-      'imagen': imagen,
+      'imagenSeleccion': imagenSeleccion,
+      'imagenesExtra': imagenesExtra,
+      'imagenSeleccionPublicId': imagenSeleccionPublicId,
+      'imagenesExtraPublicIds': imagenesExtraPublicIds,
       'bluetoothConfig': bluetoothConfig.toMap(),
       'componentes': componentes.toMap(),
       'activo': activo,
       'fechaCreacion': Timestamp.fromDate(fechaCreacion),
     };
+  }
+
+  // Método para crear copia con cambios
+  Figura copiarCon({
+    String? nombre,
+    String? tipo,
+    String? descripcion,
+    String? imagenSeleccion,
+    List<String>? imagenesExtra,
+    String? imagenSeleccionPublicId,
+    List<String>? imagenesExtraPublicIds,
+    ConfiguracionBluetooth? bluetoothConfig,
+    ComponentesFigura? componentes,
+    bool? activo,
+  }) {
+    return Figura(
+      id: id,
+      nombre: nombre ?? this.nombre,
+      tipo: tipo ?? this.tipo,
+      descripcion: descripcion ?? this.descripcion,
+      imagenSeleccion: imagenSeleccion ?? this.imagenSeleccion,
+      imagenesExtra: imagenesExtra ?? this.imagenesExtra,
+      imagenSeleccionPublicId: imagenSeleccionPublicId ?? this.imagenSeleccionPublicId,
+      imagenesExtraPublicIds: imagenesExtraPublicIds ?? this.imagenesExtraPublicIds,
+      bluetoothConfig: bluetoothConfig ?? this.bluetoothConfig,
+      componentes: componentes ?? this.componentes,
+      activo: activo ?? this.activo,
+      fechaCreacion: fechaCreacion,
+    );
   }
 }
 
@@ -132,10 +174,12 @@ class ConfiguracionLeds {
 class ConfiguracionMusica {
   final List<String> canciones;
   final int cantidad;
+  final bool disponible; // Si tiene música o no
 
   ConfiguracionMusica({
     required this.canciones,
     required this.cantidad,
+    required this.disponible,
   });
 
   factory ConfiguracionMusica.fromMap(Map<String, dynamic> map) {
@@ -143,6 +187,7 @@ class ConfiguracionMusica {
     return ConfiguracionMusica(
       canciones: listaCanciones,
       cantidad: map['cantidad'] ?? listaCanciones.length,
+      disponible: map['disponible'] ?? false,
     );
   }
 
@@ -150,6 +195,7 @@ class ConfiguracionMusica {
     return {
       'canciones': canciones,
       'cantidad': cantidad,
+      'disponible': disponible,
     };
   }
 }

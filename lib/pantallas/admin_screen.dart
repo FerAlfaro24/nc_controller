@@ -1,3 +1,4 @@
+// Archivo: lib/pantallas/admin_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -9,6 +10,7 @@ import '../widgets/auto_scrolling_text.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 import 'gestion_usuarios_screen.dart';
+import 'gestion_figuras_screen.dart'; // ✅ NUEVA IMPORTACIÓN
 import 'utilidades_admin_screen.dart';
 import 'gestion_publicidad_screen.dart';
 
@@ -21,6 +23,24 @@ class PantallaAdmin extends StatefulWidget {
 
 class _PantallaAdminState extends State<PantallaAdmin> {
   final FirebaseService _firebaseService = FirebaseService();
+  Map<String, dynamic> _infoSistema = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _cargarInfoSistema();
+  }
+
+  Future<void> _cargarInfoSistema() async {
+    try {
+      final info = await _firebaseService.obtenerInfoSistema();
+      if (mounted) {
+        setState(() => _infoSistema = info);
+      }
+    } catch (e) {
+      print('Error cargando info del sistema: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,22 +56,16 @@ class _PantallaAdminState extends State<PantallaAdmin> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: _cargarInfoSistema,
+          ),
+          IconButton(
             icon: const Icon(Icons.admin_panel_settings),
-            onPressed: () {
-              _mostrarInfoAdmin(context);
-            },
+            onPressed: () => _mostrarInfoAdmin(context),
           ),
         ],
       ),
       drawer: _construirDrawer(context),
-
-      // BOTÓN DE DEBUG TEMPORAL
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _debugFirebase,
-        icon: const Icon(Icons.bug_report),
-        label: const Text('DEBUG'),
-        backgroundColor: ColoresApp.advertencia,
-      ),
 
       body: Container(
         decoration: const BoxDecoration(
@@ -70,7 +84,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header de administrador CORREGIDO
+              // Header de administrador
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
@@ -120,17 +134,13 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          SizedBox(
-                            height: 20,
-                            child: Text(
-                              'Control total del Sistema',
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 14,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                          AutoScrollingText(
+                            text: 'Control total del Sistema Naboo Customs',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 14,
                             ),
+                            duration: const Duration(seconds: 4),
                           ),
                         ],
                       ),
@@ -139,6 +149,43 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 ),
               ),
               const SizedBox(height: 24),
+
+              // GESTIÓN DE CONTENIDO
+              _seccionAdmin(
+                'GESTIÓN DE CONTENIDO',
+                Icons.inventory,
+                ColoresApp.verdeAcento,
+                [
+                  _tarjetaAdmin(
+                    'Gestionar Figuras',
+                    'Naves y Dioramas',
+                    Icons.category,
+                    ColoresApp.moradoPrimario,
+                        () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const PantallaGestionFiguras(),
+                        ),
+                      );
+                    },
+                  ),
+                  _tarjetaAdmin(
+                    'Gestionar Usuarios',
+                    'Crear y editar',
+                    Icons.people,
+                    ColoresApp.verdeAcento,
+                        () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const PantallaGestionUsuarios(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 20),
 
               // CONFIGURACIÓN DE APLICACIÓN
               _seccionAdmin(
@@ -166,39 +213,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                           builder: (context) => const PantallaGestionPublicidad(),
                         ),
                       );
-                    },
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // GESTIÓN DE CONTENIDO
-              _seccionAdmin(
-                'GESTIÓN DE CONTENIDO',
-                Icons.inventory,
-                ColoresApp.verdeAcento,
-                [
-                  _tarjetaAdmin(
-                    'Gestionar Usuarios',
-                    'Crear y editar',
-                    Icons.people,
-                    ColoresApp.verdeAcento,
-                        () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const PantallaGestionUsuarios(),
-                        ),
-                      );
-                    },
-                  ),
-                  _tarjetaAdmin(
-                    'Gestionar Figuras',
-                    'Agregar naves',
-                    Icons.category,
-                    ColoresApp.moradoPrimario,
-                        () {
-                      _mostrarEnConstruccion('Gestión de Figuras');
                     },
                   ),
                 ],
@@ -271,51 +285,64 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               const SizedBox(height: 24),
 
               // INFORMACIÓN DEL SISTEMA
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: ColoresApp.tarjetaOscura,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: ColoresApp.bordeGris),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          color: ColoresApp.informacion,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        const Expanded(
-                          child: Text(
-                            'INFORMACIÓN DEL SISTEMA',
-                            style: TextStyle(
-                              color: ColoresApp.textoPrimario,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    _itemInformacion('Versión', '1.0.0'),
-                    _itemInformacion('Firebase', 'Conectado'),
-                    _itemInformacion('Cloudinary', 'Activo'),
-                    _itemInformacion('Usuarios', '4 registrados'),
-                    _itemInformacion('Figuras', '4 disponibles'),
-                    _itemInformacion('Última actualización', 'Hace 2 minutos'),
-                  ],
-                ),
-              ),
+              _construirInfoSistema(),
 
-              const SizedBox(height: 100), // Espacio para el botón flotante
+              const SizedBox(height: 100),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _construirInfoSistema() {
+    final figuras = _infoSistema['figuras'] as Map<String, int>? ?? {};
+    final usuarios = _infoSistema['usuarios'] as int? ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ColoresApp.tarjetaOscura,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: ColoresApp.bordeGris),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: ColoresApp.informacion,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'INFORMACIÓN DEL SISTEMA',
+                  style: TextStyle(
+                    color: ColoresApp.textoPrimario,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh, color: ColoresApp.cyanPrimario),
+                onPressed: _cargarInfoSistema,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _itemInformacion('Versión', '1.0.0'),
+          _itemInformacion('Firebase', 'Conectado'),
+          _itemInformacion('Cloudinary', 'Activo'),
+          _itemInformacion('Usuarios Activos', '$usuarios'),
+          _itemInformacion('Naves', '${figuras['naves'] ?? 0}'),
+          _itemInformacion('Dioramas', '${figuras['dioramas'] ?? 0}'),
+          _itemInformacion('Total Figuras', '${figuras['total'] ?? 0}'),
+          _itemInformacion('Última actualización', 'Ahora'),
+        ],
       ),
     );
   }
@@ -379,8 +406,19 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   context,
                   Icons.dashboard,
                   'PANEL PRINCIPAL',
+                      () => Navigator.pop(context),
+                ),
+                _itemDrawer(
+                  context,
+                  Icons.category,
+                  'FIGURAS',
                       () {
                     Navigator.pop(context);
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PantallaGestionFiguras(),
+                      ),
+                    );
                   },
                 ),
                 _itemDrawer(
@@ -407,15 +445,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                         builder: (context) => const PantallaGestionPublicidad(),
                       ),
                     );
-                  },
-                ),
-                _itemDrawer(
-                  context,
-                  Icons.category,
-                  'FIGURAS',
-                      () {
-                    Navigator.pop(context);
-                    _mostrarEnConstruccion('Gestión de Figuras');
                   },
                 ),
                 _itemDrawer(
@@ -456,78 +485,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               'CERRAR SESIÓN',
                   () async {
                 Navigator.pop(context);
-
-                final confirmar = await showDialog<bool>(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    backgroundColor: const Color(0xFF252525),
-                    title: const Text(
-                      'Cerrar Sesión Administrativa',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                    content: const Text(
-                      '¿Estás seguro de que quieres cerrar la sesión de administrador?',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text(
-                          'Cancelar',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: const Text('Cerrar Sesión'),
-                      ),
-                    ],
-                  ),
-                );
-
-                if (confirmar == true && mounted) {
-                  try {
-                    final authService = Provider.of<AuthService>(context, listen: false);
-                    await authService.cerrarSesion();
-
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Row(
-                            children: [
-                              Icon(Icons.check_circle, color: Colors.white, size: 20),
-                              SizedBox(width: 8),
-                              Text('Sesión administrativa cerrada'),
-                            ],
-                          ),
-                          backgroundColor: Colors.green,
-                          duration: Duration(seconds: 1),
-                        ),
-                      );
-
-                      await Future.delayed(const Duration(milliseconds: 500));
-
-                      if (mounted) {
-                        Navigator.of(context).pushAndRemoveUntil(
-                          MaterialPageRoute(builder: (context) => const PantallaLogin()),
-                              (route) => false,
-                        );
-                      }
-                    }
-                  } catch (e) {
-                    print('⚠️ Error cerrando sesión: $e');
-                    if (mounted) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => const PantallaLogin()),
-                            (route) => false,
-                      );
-                    }
-                  }
-                }
+                await _cerrarSesionAdmin(context);
               },
               esLogout: true,
             ),
@@ -535,6 +493,80 @@ class _PantallaAdminState extends State<PantallaAdmin> {
         ],
       ),
     );
+  }
+
+  Future<void> _cerrarSesionAdmin(BuildContext context) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF252525),
+        title: const Text(
+          'Cerrar Sesión Administrativa',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          '¿Estás seguro de que quieres cerrar la sesión de administrador?',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Cerrar Sesión'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true && mounted) {
+      try {
+        final authService = Provider.of<AuthService>(context, listen: false);
+        await authService.cerrarSesion();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text('Sesión administrativa cerrada'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 1),
+            ),
+          );
+
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                  (route) => false,
+            );
+          }
+        }
+      } catch (e) {
+        print('⚠️ Error cerrando sesión: $e');
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                (route) => false,
+          );
+        }
+      }
+    }
   }
 
   Widget _itemDrawer(BuildContext context, IconData icono, String titulo, VoidCallback onTap, {bool esLogout = false}) {
@@ -734,11 +766,12 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     );
   }
 
-  // MÉTODO DE DIÁLOGO DE TEXTO MARQUEE MEJORADO CON DEBUG
+  // Los demás métodos (_mostrarDialogoTextoMarquee, _mostrarEstadisticas, etc.) siguen igual
+  // [Métodos restantes igual que antes...]
+
   void _mostrarDialogoTextoMarquee() async {
     final TextEditingController controller = TextEditingController();
 
-    // Cargar el texto actual con debug
     try {
       print('🔍 Admin: Cargando configuración actual...');
       final config = await _firebaseService.obtenerConfiguracion().first;
@@ -890,7 +923,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               ),
             ),
             ElevatedButton.icon(
-              onPressed: () => _guardarTextoMarqueeDebug(dialogContext, controller.text),
+              onPressed: () => _guardarTextoMarquee(dialogContext, controller.text),
               icon: const Icon(Icons.save, size: 18),
               label: const Text('Guardar'),
               style: ElevatedButton.styleFrom(
@@ -907,8 +940,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     );
   }
 
-  // MÉTODO DE GUARDADO MEJORADO CON DEBUG COMPLETO
-  Future<void> _guardarTextoMarqueeDebug(BuildContext dialogContext, String nuevoTexto) async {
+  Future<void> _guardarTextoMarquee(BuildContext dialogContext, String nuevoTexto) async {
     print('🔄 Admin: Iniciando guardado de texto: "$nuevoTexto"');
 
     if (nuevoTexto.trim().isEmpty) {
@@ -949,40 +981,23 @@ class _PantallaAdminState extends State<PantallaAdmin> {
         ),
       );
 
-      print('📡 Admin: Obteniendo configuración actual...');
       // Obtener configuración actual
       final configActual = await _firebaseService.obtenerConfiguracion().first;
-      print('✅ Admin: Configuración actual obtenida. Texto anterior: "${configActual.textoMarquee}"');
 
       // Crear nueva configuración con el texto actualizado
       final nuevaConfig = configActual.copiarCon(
         textoMarquee: nuevoTexto.trim(),
       );
-      print('📝 Admin: Nueva configuración creada con texto: "${nuevaConfig.textoMarquee}"');
 
       // Guardar en Firebase
-      print('💾 Admin: Guardando en Firebase...');
       final exito = await _firebaseService.actualizarConfiguracion(nuevaConfig);
-      print('🔍 Admin: Resultado del guardado: $exito');
 
       // Cerrar indicador de carga
       if (mounted) Navigator.of(context).pop();
 
       if (exito) {
-        print('✅ Admin: Guardado exitoso, cerrando diálogo');
         // Cerrar diálogo principal
         if (mounted) Navigator.of(dialogContext).pop();
-
-        // Verificar que se guardó correctamente
-        print('🔍 Admin: Verificando que se guardó correctamente...');
-        Future.delayed(const Duration(milliseconds: 500), () async {
-          try {
-            final configVerificacion = await _firebaseService.obtenerConfiguracion().first;
-            print('✅ Admin: Verificación: Texto en Firebase: "${configVerificacion.textoMarquee}"');
-          } catch (e) {
-            print('❌ Admin: Error en verificación: $e');
-          }
-        });
 
         // Mostrar mensaje de éxito
         if (mounted) {
@@ -1013,7 +1028,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
         throw Exception('Firebase devolvió false al guardar');
       }
     } catch (e) {
-      print('❌ Admin: ERROR COMPLETO guardando texto marquee: $e');
+      print('❌ Admin: ERROR guardando texto marquee: $e');
 
       // Cerrar indicador de carga si está abierto
       if (mounted && Navigator.of(context).canPop()) {
@@ -1044,103 +1059,10 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     }
   }
 
-  // MÉTODO DE DEBUG COMPLETO DE FIREBASE
-  Future<void> _debugFirebase() async {
-    print('🐛 DEBUG: Iniciando diagnóstico completo...');
-
-    try {
-      // 1. Verificar conexión
-      print('1️⃣ Verificando conexión a Firestore...');
-      final conexionOk = await _firebaseService.verificarConexion();
-      print('   Conexión: $conexionOk');
-
-      // 2. Verificar si existe el documento
-      print('2️⃣ Verificando documento de configuración...');
-      final doc = await FirebaseFirestore.instance
-          .collection('configuraciones')
-          .doc('app')
-          .get();
-      print('   Documento existe: ${doc.exists}');
-
-      if (doc.exists) {
-        final data = doc.data();
-        print('   Datos del documento: $data');
-        print('   Texto marquee actual: "${data?['textoMarquee']}"');
-      } else {
-        print('   ⚠️ Documento no existe, creando configuración inicial...');
-
-        // Crear configuración inicial
-        final configInicial = ConfiguracionApp.porDefecto();
-        await FirebaseFirestore.instance
-            .collection('configuraciones')
-            .doc('app')
-            .set(configInicial.toFirestore());
-        print('   ✅ Configuración inicial creada');
-      }
-
-      // 3. Probar escritura directa
-      print('3️⃣ Probando escritura directa...');
-      final textoTest = 'TEXTO DE PRUEBA ${DateTime.now().millisecondsSinceEpoch}';
-      await FirebaseFirestore.instance
-          .collection('configuraciones')
-          .doc('app')
-          .set({
-        'textoMarquee': textoTest,
-        'fechaActualizacion': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-      print('   ✅ Escritura directa exitosa con texto: "$textoTest"');
-
-      // 4. Verificar escritura
-      print('4️⃣ Verificando escritura...');
-      final docDespues = await FirebaseFirestore.instance
-          .collection('configuraciones')
-          .doc('app')
-          .get();
-
-      if (docDespues.exists) {
-        final dataDespues = docDespues.data();
-        print('   ✅ Texto después de escribir: "${dataDespues?['textoMarquee']}"');
-      }
-
-      // 5. Probar stream
-      print('5️⃣ Probando stream...');
-      final stream = _firebaseService.obtenerConfiguracion();
-      final config = await stream.first;
-      print('   ✅ Stream funciona. Texto: "${config.textoMarquee}"');
-
-      // 6. Probar método de servicio
-      print('6️⃣ Probando método actualizarConfiguracion...');
-      final configPrueba = config.copiarCon(
-        textoMarquee: 'Prueba del método de servicio ${DateTime.now().millisecondsSinceEpoch}',
-      );
-      final resultadoServicio = await _firebaseService.actualizarConfiguracion(configPrueba);
-      print('   Resultado del servicio: $resultadoServicio');
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Debug completado. Revisa la consola.'),
-            backgroundColor: ColoresApp.exito,
-          ),
-        );
-      }
-
-    } catch (e) {
-      print('❌ ERROR en debug: $e');
-      print('📍 Stack trace: ${StackTrace.current}');
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Error en debug: $e'),
-            backgroundColor: ColoresApp.error,
-          ),
-        );
-      }
-    }
-  }
-
   void _mostrarEstadisticas() {
+    final figuras = _infoSistema['figuras'] as Map<String, int>? ?? {};
+    final usuarios = _infoSistema['usuarios'] as int? ?? 0;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -1159,11 +1081,12 @@ class _PantallaAdminState extends State<PantallaAdmin> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _estatistica('Usuarios Activos', '4', ColoresApp.verdeAcento),
-            _estatistica('Figuras Disponibles', '4', ColoresApp.azulPrimario),
+            _estatistica('Usuarios Activos', '$usuarios', ColoresApp.verdeAcento),
+            _estatistica('Naves Disponibles', '${figuras['naves'] ?? 0}', ColoresApp.azulPrimario),
+            _estatistica('Dioramas Disponibles', '${figuras['dioramas'] ?? 0}', ColoresApp.moradoPrimario),
+            _estatistica('Total Figuras', '${figuras['total'] ?? 0}', ColoresApp.cyanPrimario),
             _estatistica('Conexiones Bluetooth', '0', ColoresApp.advertencia),
-            _estatistica('Imágenes en Cloudinary', '2', ColoresApp.cyanPrimario),
-            _estatistica('Sesiones Admin', '1', ColoresApp.rojoAcento),
+            _estatistica('Imágenes en Cloudinary', '${(figuras['total'] ?? 0) * 2}', ColoresApp.naranjaAcento),
           ],
         ),
         actions: [
@@ -1251,10 +1174,11 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   _logEntry('✅', '10:30:25', 'Firebase OK'),
                   _logEntry('✅', '10:30:26', 'AuthService OK'),
                   _logEntry('✅', '10:30:27', 'Cloudinary OK'),
-                  _logEntry('📤', '10:45:12', 'Imagen subida'),
+                  _logEntry('📊', '10:45:12', 'Info sistema cargada'),
                   _logEntry('👤', '10:47:33', 'Admin logueado'),
                   _logEntry('⚙️', '10:48:15', 'Config actualizada'),
-                  _logEntry('📝', '10:50:20', 'Marquee editado'),
+                  _logEntry('🖼️', '10:50:20', 'Figura creada'),
+                  _logEntry('📝', '10:52:10', 'Marquee editado'),
                 ],
               ),
             ),
@@ -1302,36 +1226,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     );
   }
 
-  void _mostrarEnConstruccion(String seccion) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ColoresApp.tarjetaOscura,
-        title: Row(
-          children: [
-            Icon(Icons.construction, color: ColoresApp.naranjaAcento),
-            const SizedBox(width: 8),
-            Text(
-              'En Construcción',
-              style: TextStyle(color: ColoresApp.textoPrimario),
-            ),
-          ],
-        ),
-        content: Text(
-          'La sección "$seccion" está en desarrollo.\n\n¡Pronto estará disponible!',
-          style: TextStyle(color: ColoresApp.textoSecundario),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.naranjaAcento),
-            child: const Text('Entendido'),
-          ),
-        ],
-      ),
-    );
-  }
-
   void _mostrarInfoAdmin(BuildContext context) {
     showDialog(
       context: context,
@@ -1362,6 +1256,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
             const SizedBox(height: 12),
             const Text(
               'Panel de control completo para gestionar:\n\n'
+                  '• Figuras (Naves y Dioramas)\n'
                   '• Usuarios y permisos\n'
                   '• Publicidad push\n'
                   '• Configuración del sistema\n'
