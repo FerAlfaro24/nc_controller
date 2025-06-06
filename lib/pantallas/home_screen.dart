@@ -8,6 +8,9 @@ import '../modelos/configuracion_app.dart';     // Asegúrate que esta ruta es c
 import '../widgets/publicidad_push_widget.dart'; // Asegúrate que esta ruta es correcta
 import '../widgets/complete_text_marquee.dart';   // Asegúrate que esta ruta es correcta
 import 'login_screen.dart';                     // Asegúrate que esta ruta es correcta
+// ✅ IMPORTACIONES NUEVAS PARA NAVEGACIÓN
+import 'catalogo_naves_screen.dart';            // Catálogo de Naves
+import 'catalogo_dioramas_screen.dart';         // Catálogo de Dioramas
 
 class PantallaHome extends StatefulWidget {
   const PantallaHome({super.key});
@@ -110,6 +113,30 @@ class _PantallaHomeState extends State<PantallaHome> {
         );
       }
     }
+  }
+
+  // ✅ NUEVA FUNCIÓN: Navegar a catálogo de naves
+  void _navegarANaves() {
+    print('🚀 Navegando a catálogo de naves...');
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const PantallaCatalogoNaves(),
+      ),
+    ).then((_) {
+      print('🔙 Regresando del catálogo de naves');
+    });
+  }
+
+  // ✅ NUEVA FUNCIÓN: Navegar a catálogo de dioramas
+  void _navegarADioramas() {
+    print('🏛️ Navegando a catálogo de dioramas...');
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const PantallaCatalogoDioramas(),
+      ),
+    ).then((_) {
+      print('🔙 Regresando del catálogo de dioramas');
+    });
   }
 
   @override
@@ -218,7 +245,7 @@ class _PantallaHomeState extends State<PantallaHome> {
               ),
               const SizedBox(height: 32),
 
-              // Tarjetas principales
+              // ✅ TARJETAS PRINCIPALES CORREGIDAS CON NAVEGACIÓN REAL
               Row(
                 children: [
                   Expanded(
@@ -226,9 +253,7 @@ class _PantallaHomeState extends State<PantallaHome> {
                       'NAVES',
                       Icons.rocket,
                       ColoresApp.azulPrimario,
-                          () {
-                        _mostrarEnConstruccion(context, 'Naves');
-                      },
+                      _navegarANaves, // ✅ FUNCIÓN REAL DE NAVEGACIÓN
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -237,9 +262,7 @@ class _PantallaHomeState extends State<PantallaHome> {
                       'DIORAMAS',
                       Icons.landscape,
                       ColoresApp.moradoPrimario,
-                          () {
-                        _mostrarEnConstruccion(context, 'Dioramas');
-                      },
+                      _navegarADioramas, // ✅ FUNCIÓN REAL DE NAVEGACIÓN
                     ),
                   ),
                 ],
@@ -440,13 +463,14 @@ class _PantallaHomeState extends State<PantallaHome> {
               padding: EdgeInsets.zero,
               children: [
                 _itemDrawer(context, Icons.home, 'INICIO', () => Navigator.pop(context)),
+                // ✅ NAVEGACIÓN REAL EN EL DRAWER TAMBIÉN
                 _itemDrawer(context, Icons.rocket, 'NAVES', () {
                   Navigator.pop(context);
-                  _mostrarEnConstruccion(context, 'Naves');
+                  _navegarANaves();
                 }),
                 _itemDrawer(context, Icons.landscape, 'DIORAMAS', () {
                   Navigator.pop(context);
-                  _mostrarEnConstruccion(context, 'Dioramas');
+                  _navegarADioramas();
                 }),
                 _itemDrawer(context, Icons.bluetooth_searching, 'BLUETOOTH', () {
                   Navigator.pop(context);
