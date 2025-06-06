@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../nucleo/constantes/colores_app.dart';
-import '../servicios/auth_service.dart';
-import '../servicios/firebase_service.dart';
-import '../modelos/configuracion_app.dart';
-import '../widgets/publicidad_push_widget.dart';
-import '../widgets/complete_text_marquee.dart';
-import 'login_screen.dart';
+import '../nucleo/constantes/colores_app.dart'; // Asegúrate que esta ruta es correcta
+import '../servicios/auth_service.dart';         // Asegúrate que esta ruta es correcta
+import '../servicios/firebase_service.dart';      // Asegúrate que esta ruta es correcta
+import '../modelos/configuracion_app.dart';     // Asegúrate que esta ruta es correcta
+import '../widgets/publicidad_push_widget.dart'; // Asegúrate que esta ruta es correcta
+import '../widgets/complete_text_marquee.dart';   // Asegúrate que esta ruta es correcta
+import 'login_screen.dart';                     // Asegúrate que esta ruta es correcta
 
 class PantallaHome extends StatefulWidget {
   const PantallaHome({super.key});
@@ -17,43 +17,99 @@ class PantallaHome extends StatefulWidget {
 }
 
 class _PantallaHomeState extends State<PantallaHome> {
-  // ✅ CORREGIDO: Variables para controlar publicidad por sesión
-  bool _publicidadMostradaEnEstaSession = false;
+  bool _publicidadMostradaEnEstaSession = false; // Aunque menos crítica ahora, puede ser útil para otros flujos
+  final FirebaseService _firebaseService = FirebaseService();
 
   @override
   void initState() {
     super.initState();
-    _mostrarPublicidadSiCorresponde();
+    print('🏠 PantallaHome: initState ejecutado');
+    Future.delayed(const Duration(milliseconds: 800), () {
+      if (mounted) {
+        _verificarYMostrarPublicidad();
+      }
+    });
   }
 
-  // ✅ MÉTODO SIMPLIFICADO: Mostrar publicidad una vez por sesión
-  void _mostrarPublicidadSiCorresponde() {
-    // Esperar un poco para que la pantalla se estabilice
-    Future.delayed(const Duration(milliseconds: 1500), () {
-      if (!mounted || _publicidadMostradaEnEstaSession) return;
+  Future<void> _verificarYMostrarPublicidad() async {
+    print('📢 Verificando publicidad (intento por cada carga de PantallaHome)...');
+    try {
+      final config = await _firebaseService.obtenerConfiguracion().first;
+      final publicidad = config.publicidadPush;
 
-      final firebaseService = FirebaseService();
+      print('📢 Estado publicidad desde Firebase:');
+      print('   - Activa: ${publicidad.activa}');
+      print('   - Título: "${publicidad.titulo}"');
+      print('   - Imagen URL presente: ${publicidad.imagenUrl.isNotEmpty}');
+      print('   - Expirada: ${publicidad.estaExpirada}');
 
-      firebaseService.obtenerConfiguracion().listen((config) {
-        if (!mounted || _publicidadMostradaEnEstaSession) return;
+      bool deberiaMostrarSegunFirebase = publicidad.activa &&
+          publicidad.titulo.trim().isNotEmpty &&
+          !publicidad.estaExpirada;
 
-        final publicidad = config.publicidadPush;
-
-        // ✅ NUEVA LÓGICA: Verificar si debe mostrar y no se ha mostrado en esta sesión
-        if (publicidad.deberiaMostrarse && publicidad.titulo.trim().isNotEmpty) {
-          print('📢 Mostrando publicidad: ${publicidad.titulo}');
-
-          // Marcar como mostrada en esta sesión
-          _publicidadMostradaEnEstaSession = true;
-
-          PublicidadPushModal.mostrar(context, publicidad);
-        } else {
-          print('❌ Publicidad no se muestra. Activa: ${publicidad.activa}, Título: "${publicidad.titulo}"');
+      if (deberiaMostrarSegunFirebase) {
+        print('✅ Publicidad CUMPLE condiciones de Firebase. Mostrando: "${publicidad.titulo}"');
+        // setState(() { // Opcional, ver comentarios en la versión anterior
+        //   _publicidadMostradaEnEstaSession = true;
+        // });
+        if (mounted) {
+          await PublicidadPushModal.mostrar(context, publicidad);
         }
-      }).onError((error) {
-        print('❌ Error obteniendo configuración para publicidad: $error');
-      });
-    });
+      } else {
+        print('❌ Publicidad NO CUMPLE condiciones de Firebase. No se muestra:');
+        print('   - Activa: ${publicidad.activa}');
+        print('   - Título vacío o solo espacios: ${publicidad.titulo.trim().isEmpty}');
+        print('   - Expirada: ${publicidad.estaExpirada}');
+      }
+    } catch (e) {
+      print('❌ Error crítico verificando/obteniendo publicidad desde Firebase: $e');
+    }
+  }
+
+  void _debugMostrarPublicidad() async {
+    print('🐞 DEBUG: Botón "Debug Publicidad" presionado.');
+    try {
+      final config = await _firebaseService.obtenerConfiguracion().first;
+      final publicidad = config.publicidadPush;
+
+      print('🐞 DEBUG: Configuración de publicidad obtenida para debug:');
+      print('   - Activa: ${publicidad.activa}');
+      print('   - Título: "${publicidad.titulo}"');
+      print('   - Expirada: ${publicidad.estaExpirada}');
+
+      bool deberiaMostrarDebug = publicidad.activa &&
+          publicidad.titulo.trim().isNotEmpty &&
+          !publicidad.estaExpirada;
+
+      if (deberiaMostrarDebug) {
+        print('🐞 DEBUG: Publicidad CUMPLE condiciones Firebase. Intentando mostrar modal.');
+        if (mounted) {
+          await PublicidadPushModal.mostrar(context, publicidad);
+        }
+      } else {
+        print('🐞 DEBUG: Publicidad NO CUMPLE condiciones Firebase. No se muestra el modal.');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('DEBUG: Publicidad no cumple condiciones para mostrarse (Activa: ${publicidad.activa}, Título: "${publicidad.titulo}", Expirada: ${publicidad.estaExpirada})'),
+              backgroundColor: ColoresApp.advertencia.withOpacity(0.8),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ Error en debug publicidad: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('DEBUG: Error obteniendo publicidad: $e'),
+            backgroundColor: ColoresApp.error,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -70,8 +126,15 @@ class _PantallaHomeState extends State<PantallaHome> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.campaign, color: ColoresApp.naranjaAcento),
+            onPressed: _debugMostrarPublicidad,
+            tooltip: 'Debug Publicidad',
+          ),
+          IconButton(
             icon: const Icon(Icons.rocket_launch),
-            onPressed: () {},
+            onPressed: () {
+              // Acción para el cohete
+            },
           ),
         ],
       ),
@@ -88,57 +151,30 @@ class _PantallaHomeState extends State<PantallaHome> {
           ),
         ),
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ✅ MARQUEE: Mantener funcionando
               StreamBuilder<ConfiguracionApp>(
-                stream: FirebaseService().obtenerConfiguracion(),
+                stream: _firebaseService.obtenerConfiguracion(),
                 builder: (context, snapshot) {
-                  print('🏠 Home: StreamBuilder ejecutado - hasData: ${snapshot.hasData}');
-
-                  if (!snapshot.hasData) {
-                    return Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'Cargando información...',
-                          style: TextStyle(color: Colors.white, fontSize: 14),
-                        ),
-                      ),
-                    );
-                  }
-
+                  print('🏠 StreamBuilder marquee - ConnectionState: ${snapshot.connectionState}, HasData: ${snapshot.hasData}, HasError: ${snapshot.hasError}');
                   if (snapshot.hasError) {
-                    return Container(
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: Colors.black,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: ColoresApp.error.withOpacity(0.3)),
-                      ),
-                      child: const Center(
-                        child: Text(
-                          'Error cargando configuración',
-                          style: TextStyle(color: Colors.white, fontSize: 12),
-                        ),
-                      ),
-                    );
+                    print('   Error en Stream Marquee: ${snapshot.error}');
                   }
-
-                  final configuracion = snapshot.data!;
-                  final textoMarquee = configuracion.textoMarquee.isNotEmpty
-                      ? configuracion.textoMarquee
-                      : '¡Bienvenido a Naboo Customs! Controla tus figuras futuristas con tecnología avanzada 🚀';
-
-                  print('🎨 Home: Texto completo: "$textoMarquee" (${textoMarquee.length} caracteres)');
-
+                  String textoMarquee = '¡Bienvenido a Naboo Customs! 🚀';
+                  if (snapshot.hasData) {
+                    final configuracion = snapshot.data!;
+                    if (configuracion.textoMarquee.isNotEmpty) {
+                      textoMarquee = configuracion.textoMarquee;
+                    }
+                    print('🎨 Texto marquee actualizado: "$textoMarquee"');
+                  } else if (snapshot.connectionState == ConnectionState.waiting) {
+                    textoMarquee = 'Cargando noticias...';
+                  } else if (snapshot.hasError) {
+                    textoMarquee = 'Error al cargar noticias.';
+                  }
                   return Container(
                     key: ValueKey(textoMarquee),
                     decoration: BoxDecoration(
@@ -155,7 +191,7 @@ class _PantallaHomeState extends State<PantallaHome> {
                       ),
                       duration: const Duration(seconds: 10),
                       height: 40,
-                      backgroundColor: Colors.black,
+                      backgroundColor: Colors.black.withOpacity(0.5),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     ),
                   );
@@ -237,57 +273,9 @@ class _PantallaHomeState extends State<PantallaHome> {
               ),
               const SizedBox(height: 32),
 
-              // ✅ NUEVA SECCIÓN: Estado de publicidad (para debugging)
-              StreamBuilder<ConfiguracionApp>(
-                stream: FirebaseService().obtenerConfiguracion(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) return const SizedBox.shrink();
+              // ✅ SECCIÓN DEBUG DE PUBLICIDAD ELIMINADA DE LA UI
+              // Ya no se mostrará el recuadro de debug de publicidad aquí.
 
-                  final publicidad = snapshot.data!.publicidadPush;
-
-                  return Container(
-                    padding: const EdgeInsets.all(12),
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: ColoresApp.informacion.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: ColoresApp.informacion.withOpacity(0.3)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.info_outline, size: 16, color: ColoresApp.informacion),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'ESTADO PUBLICIDAD',
-                              style: TextStyle(
-                                color: ColoresApp.informacion,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Activa: ${publicidad.activa}\n'
-                              'Título: "${publicidad.titulo}"\n'
-                              'Debería mostrarse: ${publicidad.deberiaMostrarse}\n',
-
-                          style: const TextStyle(
-                            color: ColoresApp.textoSecundario,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-
-              // Resto del contenido...
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -317,10 +305,10 @@ class _PantallaHomeState extends State<PantallaHome> {
                       ],
                     ),
                     const SizedBox(height: 16),
-                    _itemEstado('Firebase', true, 'Conectado'),
-                    _itemEstado('Bluetooth', false, 'Desconectado'),
-                    _itemEstado('Figuras', true, '4 disponibles'),
-                    _itemEstado('Cloudinary', true, 'Imágenes activas'),
+                    _itemEstado('Firebase', true, 'Conectado (verificar datos)'),
+                    _itemEstado('Bluetooth', false, 'Desconectado (requiere acción)'),
+                    _itemEstado('Figuras', true, '4 disponibles (simulado)'),
+                    _itemEstado('Cloudinary', true, 'Imágenes activas (simulado)'),
                   ],
                 ),
               ),
@@ -398,7 +386,6 @@ class _PantallaHomeState extends State<PantallaHome> {
     );
   }
 
-  // ✅ RESTO DE MÉTODOS IGUALES...
   Widget _construirDrawer(BuildContext context) {
     return Drawer(
       backgroundColor: const Color(0xFF1A1A1A),
@@ -406,6 +393,7 @@ class _PantallaHomeState extends State<PantallaHome> {
         children: [
           Container(
             height: 200,
+            width: double.infinity,
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -460,12 +448,12 @@ class _PantallaHomeState extends State<PantallaHome> {
                   Navigator.pop(context);
                   _mostrarEnConstruccion(context, 'Dioramas');
                 }),
-                _itemDrawer(context, Icons.bluetooth, 'BLUETOOTH', () {
+                _itemDrawer(context, Icons.bluetooth_searching, 'BLUETOOTH', () {
                   Navigator.pop(context);
                   _mostrarEnConstruccion(context, 'Bluetooth');
                 }),
-                const Divider(color: Color(0xFF404040)),
-                _itemDrawer(context, Icons.person, 'PERFIL', () {
+                const Divider(color: Color(0xFF404040), height: 1, thickness: 1),
+                _itemDrawer(context, Icons.person_outline, 'PERFIL', () {
                   Navigator.pop(context);
                   _mostrarEnConstruccion(context, 'Perfil');
                 }),
@@ -476,8 +464,9 @@ class _PantallaHomeState extends State<PantallaHome> {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.all(16),
+          const Divider(color: Color(0xFF404040), height: 1, thickness: 1),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
             child: _itemDrawer(context, Icons.exit_to_app, 'CERRAR SESIÓN', () async {
               Navigator.pop(context);
               final confirmar = await showDialog<bool>(
@@ -493,7 +482,7 @@ class _PantallaHomeState extends State<PantallaHome> {
                     ),
                     ElevatedButton(
                       onPressed: () => Navigator.of(context).pop(true),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
                       child: const Text('Cerrar Sesión'),
                     ),
                   ],
@@ -509,13 +498,13 @@ class _PantallaHomeState extends State<PantallaHome> {
                       const SnackBar(
                         content: Row(
                           children: [
-                            Icon(Icons.check_circle, color: Colors.white, size: 20),
+                            Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
                             SizedBox(width: 8),
-                            Text('¡Hasta luego!'),
+                            Text('¡Hasta luego! Sesión cerrada.'),
                           ],
                         ),
                         backgroundColor: Colors.green,
-                        duration: Duration(seconds: 1),
+                        duration: Duration(seconds: 2),
                       ),
                     );
                     await Future.delayed(const Duration(milliseconds: 500));
@@ -527,7 +516,15 @@ class _PantallaHomeState extends State<PantallaHome> {
                     }
                   }
                 } catch (e) {
+                  print("Error al cerrar sesión: $e");
                   if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error al cerrar sesión: $e'),
+                        backgroundColor: ColoresApp.error,
+                      ),
+                    );
+                    await Future.delayed(const Duration(milliseconds: 300));
                     Navigator.of(context).pushAndRemoveUntil(
                       MaterialPageRoute(builder: (context) => const PantallaLogin()),
                           (route) => false,
@@ -543,19 +540,26 @@ class _PantallaHomeState extends State<PantallaHome> {
   }
 
   Widget _itemDrawer(BuildContext context, IconData icono, String titulo, VoidCallback onTap, {bool esLogout = false}) {
+    final colorIcono = esLogout ? Colors.redAccent : ColoresApp.cyanPrimario.withOpacity(0.8);
+    final colorTexto = esLogout ? Colors.redAccent : Colors.white.withOpacity(0.9);
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: Colors.transparent,
-      ),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       child: ListTile(
-        leading: Icon(icono, color: esLogout ? Colors.red : Colors.cyan, size: 24),
-        title: Text(titulo, style: TextStyle(color: esLogout ? Colors.red : Colors.white, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+        leading: Icon(icono, color: colorIcono, size: 24),
+        title: Text(
+          titulo,
+          style: TextStyle(
+            color: colorTexto,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.3,
+          ),
+        ),
         onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        hoverColor: Colors.cyan.withOpacity(0.1),
-        splashColor: Colors.cyan.withOpacity(0.2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        hoverColor: ColoresApp.cyanPrimario.withOpacity(0.05),
+        splashColor: ColoresApp.cyanPrimario.withOpacity(0.1),
+        dense: true,
       ),
     );
   }
@@ -571,9 +575,9 @@ class _PantallaHomeState extends State<PantallaHome> {
           border: Border.all(color: color.withOpacity(0.3)),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
+              color: color.withOpacity(0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
             ),
           ],
         ),
@@ -583,13 +587,23 @@ class _PantallaHomeState extends State<PantallaHome> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                shape: BoxShape.circle,
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: color.withOpacity(0.3), width: 1.5)
               ),
-              child: Icon(icono, size: 40, color: color),
+              child: Icon(icono, size: 36, color: color),
             ),
             const SizedBox(height: 12),
-            Text(titulo, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600, letterSpacing: 0.5)),
+            Text(
+              titulo,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  letterSpacing: 0.5
+              ),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       ),
@@ -598,15 +612,21 @@ class _PantallaHomeState extends State<PantallaHome> {
 
   Widget _itemEstado(String titulo, bool activo, String descripcion) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
         children: [
           Container(
-            width: 8,
-            height: 8,
+            width: 10,
+            height: 10,
             decoration: BoxDecoration(
-              color: activo ? ColoresApp.exito : ColoresApp.error,
-              shape: BoxShape.circle,
+                color: activo ? ColoresApp.exito : ColoresApp.error,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: (activo ? ColoresApp.exito : ColoresApp.error).withOpacity(0.5),
+                    blurRadius: 4,
+                  )
+                ]
             ),
           ),
           const SizedBox(width: 12),
@@ -615,7 +635,10 @@ class _PantallaHomeState extends State<PantallaHome> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(titulo, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
-                Text(descripcion, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                if (descripcion.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(descripcion, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                ]
               ],
             ),
           ),
@@ -627,44 +650,43 @@ class _PantallaHomeState extends State<PantallaHome> {
   Widget _botonEnlace(String titulo, IconData icono, Color color, String url) {
     return ElevatedButton.icon(
       onPressed: () => _abrirEnlace(url, titulo),
-      icon: Icon(icono, size: 18),
-      label: Text(titulo),
+      icon: Icon(icono, size: 20),
+      label: Text(titulo, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
       style: ElevatedButton.styleFrom(
         backgroundColor: color,
         foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 3,
       ),
     );
   }
 
   Future<void> _abrirEnlace(String url, String nombre) async {
     try {
-      print('🔗 Intentando abrir: $url');
+      print('🔗 Intentando abrir enlace: "$nombre" ($url)');
       final uri = Uri.parse(url);
-      bool canLaunch = await canLaunchUrl(uri);
-      print('🔍 CanLaunch: $canLaunch');
-
-      if (canLaunch) {
-        bool launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-        if (launched) {
-          print('✅ Enlace abierto correctamente');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Abriendo $nombre...'),
-                backgroundColor: ColoresApp.exito,
-                duration: const Duration(seconds: 1),
-              ),
-            );
-          }
-        } else {
-          throw Exception('No se pudo abrir el enlace');
-        }
-      } else {
-        throw Exception('No hay aplicación disponible para abrir este enlace');
+      if (!await canLaunchUrl(uri)) {
+        print('❌ No se puede lanzar la URL (canLaunchUrl falló): $url');
+        throw Exception('No hay aplicación disponible para abrir este enlace o la URL es inválida.');
+      }
+      bool launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        print('❌ Falló el lanzamiento de la URL (launchUrl devolvió false): $url');
+        throw Exception('No se pudo abrir el enlace, aunque la URL parecía válida.');
+      }
+      print('✅ Enlace "$nombre" abierto o intento de apertura iniciado.');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Abriendo $nombre...'),
+            backgroundColor: ColoresApp.exito,
+            duration: const Duration(seconds: 2),
+          ),
+        );
       }
     } catch (e) {
-      print('❌ Error abriendo enlace: $e');
+      print('❌ Error crítico abriendo enlace "$nombre" ($url): $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -672,12 +694,13 @@ class _PantallaHomeState extends State<PantallaHome> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Error abriendo $nombre'),
-                Text('URL: $url', style: const TextStyle(fontSize: 12)),
+                Text('Error abriendo $nombre.'),
+                Text('Detalle: ${e.toString().substring(0, (e.toString().length > 100) ? 100 : e.toString().length)}...', style: const TextStyle(fontSize: 10)),
+                Text('URL: $url', style: const TextStyle(fontSize: 10)),
               ],
             ),
             backgroundColor: ColoresApp.error,
-            duration: const Duration(seconds: 3),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
@@ -689,18 +712,28 @@ class _PantallaHomeState extends State<PantallaHome> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ColoresApp.tarjetaOscura,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.construction, color: ColoresApp.naranjaAcento),
-            const SizedBox(width: 8),
-            Text('En Construcción', style: TextStyle(color: ColoresApp.textoPrimario)),
+            Icon(Icons.construction_rounded, color: ColoresApp.naranjaAcento),
+            const SizedBox(width: 10),
+            Text('En Construcción', style: TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Text('La sección "$seccion" está en desarrollo.\n\n¡Pronto estará disponible con funcionalidades completas!', style: TextStyle(color: ColoresApp.textoSecundario)),
+        content: Text(
+          'La sección "$seccion" está en pleno desarrollo.\n\n¡Muy pronto estará disponible con nuevas y emocionantes funcionalidades! Agradecemos tu paciencia.',
+          style: TextStyle(color: ColoresApp.textoSecundario, height: 1.4),
+          textAlign: TextAlign.center,
+        ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: ColoresApp.cyanPrimario,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold)
+            ),
             child: const Text('Entendido'),
           ),
         ],
@@ -713,26 +746,56 @@ class _PantallaHomeState extends State<PantallaHome> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ColoresApp.tarjetaOscura,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            Icon(Icons.help, color: ColoresApp.cyanPrimario),
-            const SizedBox(width: 8),
-            Text('Ayuda', style: TextStyle(color: ColoresApp.textoPrimario)),
+            Icon(Icons.help_center_rounded, color: ColoresApp.cyanPrimario),
+            const SizedBox(width: 10),
+            Text('Centro de Ayuda', style: TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.bold)),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Naboo Customs Controller', style: TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.bold, fontSize: 16)),
-            const SizedBox(height: 8),
-            Text('Aplicación para controlar figuras con Arduino y Bluetooth.\n\n• Conecta tus figuras vía Bluetooth\n• Controla LEDs y música\n• Activa efectos de humo\n• Gestiona tu colección', style: TextStyle(color: ColoresApp.textoSecundario)),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Naboo Customs Controller v1.0', style: TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.bold, fontSize: 16)),
+              const SizedBox(height: 12),
+              Text(
+                'Esta aplicación te permite interactuar y controlar tus figuras customizadas de Naboo Customs equipadas con tecnología Arduino y Bluetooth.',
+                style: TextStyle(color: ColoresApp.textoSecundario, height: 1.4),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'Funcionalidades principales:',
+                style: TextStyle(color: ColoresApp.textoPrimario.withOpacity(0.8), fontWeight: FontWeight.w600),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '• Conexión Bluetooth con tus figuras.\n'
+                    '• Control de sistemas de LEDs y secuencias de luces.\n'
+                    '• Reproducción de efectos de sonido y música.\n'
+                    '• Activación de efectos especiales (ej. humo).\n'
+                    '• Gestión y visualización de tu colección de figuras.',
+                style: TextStyle(color: ColoresApp.textoSecundario, height: 1.4),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Si encuentras algún problema o tienes sugerencias, no dudes en contactarnos a través de nuestras redes sociales.',
+                style: TextStyle(color: ColoresApp.textoSecundario.withOpacity(0.8), fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
         ),
+        actionsAlignment: MainAxisAlignment.center,
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
+            style: ElevatedButton.styleFrom(
+                backgroundColor: ColoresApp.cyanPrimario,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold)
+            ),
             child: const Text('Cerrar'),
           ),
         ],
