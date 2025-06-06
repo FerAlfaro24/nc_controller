@@ -1,3 +1,4 @@
+// Archivo: lib/servicios/firebase_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../modelos/figura.dart';
 import '../modelos/configuracion_app.dart';
@@ -79,13 +80,16 @@ class FirebaseService {
     }
   }
 
-  /// Eliminar figura (soft delete)
+  /// ✅ CORREGIDO: Eliminar figura (soft delete)
   Future<bool> eliminarFigura(String figuraId) async {
     try {
       await _firestore
           .collection('figuras')
           .doc(figuraId)
-          .update({'activo': false});
+          .update({
+        'activo': false,
+        'fechaEliminacion': FieldValue.serverTimestamp(),
+      });
       print('✅ Figura $figuraId eliminada (soft delete)');
       return true;
     } catch (e) {
@@ -94,7 +98,7 @@ class FirebaseService {
     }
   }
 
-  /// Eliminar figura permanentemente
+  /// ✅ NUEVO: Eliminar figura permanentemente
   Future<bool> eliminarFiguraPermanente(String figuraId) async {
     try {
       await _firestore.collection('figuras').doc(figuraId).delete();

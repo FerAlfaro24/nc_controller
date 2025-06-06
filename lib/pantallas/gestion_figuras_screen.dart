@@ -7,7 +7,6 @@ import '../servicios/cloudinary_service.dart';
 import '../servicios/firebase_service.dart';
 import '../modelos/figura.dart';
 import '../nucleo/constantes/colores_app.dart';
-import '../widgets/auto_scrolling_text.dart';
 
 class PantallaGestionFiguras extends StatefulWidget {
   const PantallaGestionFiguras({super.key});
@@ -129,7 +128,7 @@ class _PantallaGestionFigurasState extends State<PantallaGestionFiguras> with Si
             crossAxisCount: 2,
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
+            childAspectRatio: 0.7,
           ),
           itemCount: figuras.length,
           itemBuilder: (context, index) {
@@ -148,172 +147,127 @@ class _PantallaGestionFigurasState extends State<PantallaGestionFiguras> with Si
         decoration: BoxDecoration(
           color: ColoresApp.tarjetaOscura,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: ColoresApp.bordeGris),
+          border: Border.all(color: ColoresApp.bordeGris.withOpacity(0.5)),
           boxShadow: [
             BoxShadow(
-              color: ColoresApp.cyanPrimario.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.4),
               blurRadius: 8,
               offset: const Offset(0, 4),
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Imagen
-            Expanded(
-              flex: 3,
-              child: Container(
-                width: double.infinity,
-                decoration: const BoxDecoration(
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-                ),
-                child: ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              AspectRatio(
+                aspectRatio: 4 / 3,
+                child: Container(
+                  color: ColoresApp.superficieOscura,
                   child: figura.imagenSeleccion.isNotEmpty
                       ? CachedNetworkImage(
                     imageUrl: figura.imagenSeleccion,
                     fit: BoxFit.cover,
-                    placeholder: (context, url) => Container(
-                      color: ColoresApp.superficieOscura,
-                      child: const Center(
-                        child: CircularProgressIndicator(color: ColoresApp.cyanPrimario),
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: ColoresApp.cyanPrimario,
                       ),
                     ),
-                    errorWidget: (context, url, error) => Container(
-                      color: ColoresApp.superficieOscura,
-                      child: const Center(
-                        child: Icon(Icons.error, color: ColoresApp.error),
+                    errorWidget: (context, url, error) => const Center(
+                      child: Icon(
+                        Icons.broken_image,
+                        color: ColoresApp.textoApagado,
                       ),
                     ),
                   )
-                      : Container(
-                    color: ColoresApp.superficieOscura,
-                    child: Icon(
-                      figura.tipo == 'nave' ? Icons.rocket : Icons.landscape,
-                      size: 32,
-                      color: ColoresApp.textoApagado,
-                    ),
+                      : Icon(
+                    figura.tipo == 'nave'
+                        ? Icons.rocket_launch_outlined
+                        : Icons.terrain_outlined,
+                    size: 40,
+                    color: ColoresApp.textoApagado,
                   ),
                 ),
               ),
-            ),
-
-            // Información
-            Expanded(
-              flex: 2,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Nombre con auto-scroll
-                    AutoScrollingText(
-                      text: figura.nombre,
-                      style: const TextStyle(
-                        color: ColoresApp.textoPrimario,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(8, 8, 8, 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        figura.nombre,
+                        style: const TextStyle(
+                          color: ColoresApp.textoPrimario,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                      duration: const Duration(seconds: 3),
-                    ),
-                    const SizedBox(height: 4),
-
-                    // Tipo y Bluetooth
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: figura.tipo == 'nave'
-                                ? ColoresApp.azulPrimario.withOpacity(0.2)
-                                : ColoresApp.verdeAcento.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            figura.tipo.toUpperCase(),
-                            style: TextStyle(
-                              color: figura.tipo == 'nave' ? ColoresApp.azulPrimario : ColoresApp.verdeAcento,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 4.0,
+                        runSpacing: 4.0,
+                        children: [
+                          if (figura.componentes.leds.cantidad > 0)
+                            _componenteChip(Icons.lightbulb_outline, ColoresApp.verdeAcento),
+                          if (figura.componentes.musica.disponible)
+                            _componenteChip(Icons.music_note_outlined, ColoresApp.cyanPrimario),
+                          if (figura.componentes.humidificador.disponible)
+                            _componenteChip(Icons.cloud_outlined, ColoresApp.azulPrimario),
+                        ],
+                      ),
+                      const Spacer(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            onPressed: () => _mostrarDialogoEditarFigura(figura),
+                            icon: const Icon(
+                              Icons.edit,
+                              size: 20,
+                              color: ColoresApp.cyanPrimario,
                             ),
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: figura.bluetoothConfig.tipoModulo == 'ble'
-                                ? ColoresApp.moradoPrimario.withOpacity(0.2)
-                                : ColoresApp.naranjaAcento.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            figura.bluetoothConfig.tipoModulo.toUpperCase(),
-                            style: TextStyle(
-                              color: figura.bluetoothConfig.tipoModulo == 'ble'
-                                  ? ColoresApp.moradoPrimario
-                                  : ColoresApp.naranjaAcento,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-
-                    // Iconos de componentes
-                    Row(
-                      children: [
-                        if (figura.componentes.leds.cantidad > 0) ...[
-                          Icon(Icons.lightbulb, size: 16, color: ColoresApp.verdeAcento),
-                          Text(
-                            '${figura.componentes.leds.cantidad}',
-                            style: const TextStyle(color: ColoresApp.textoSecundario, fontSize: 12),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            tooltip: 'Editar',
                           ),
                           const SizedBox(width: 8),
-                        ],
-                        if (figura.componentes.musica.disponible) ...[
-                          Icon(Icons.music_note, size: 16, color: ColoresApp.cyanPrimario),
-                          Text(
-                            '${figura.componentes.musica.cantidad}',
-                            style: const TextStyle(color: ColoresApp.textoSecundario, fontSize: 12),
+                          IconButton(
+                            onPressed: () => _confirmarEliminarFigura(figura),
+                            icon: const Icon(
+                              Icons.delete_forever,
+                              size: 20,
+                              color: ColoresApp.error,
+                            ),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                            tooltip: 'Eliminar',
                           ),
-                          const SizedBox(width: 8),
                         ],
-                        if (figura.componentes.humidificador.disponible)
-                          Icon(Icons.cloud, size: 16, color: ColoresApp.azulPrimario),
-                      ],
-                    ),
-                  ],
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-
-            // Botones de acción
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: () => _mostrarDialogoEditarFigura(figura),
-                      icon: const Icon(Icons.edit, size: 16),
-                      label: const Text('Editar', style: TextStyle(fontSize: 12)),
-                      style: TextButton.styleFrom(foregroundColor: ColoresApp.cyanPrimario),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => _confirmarEliminarFigura(figura),
-                    icon: const Icon(Icons.delete, size: 18, color: ColoresApp.error),
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _componenteChip(IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Icon(icon, size: 14, color: color),
     );
   }
 
@@ -341,7 +295,7 @@ class _PantallaGestionFigurasState extends State<PantallaGestionFiguras> with Si
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('❌ Error: $e'),
+                  content: Text('❌ Error creando: ${e.toString()}'),
                   backgroundColor: ColoresApp.error,
                 ),
               );
@@ -364,7 +318,7 @@ class _PantallaGestionFigurasState extends State<PantallaGestionFiguras> with Si
         onGuardar: (figuraData) async {
           setState(() => _cargando = true);
           try {
-            final exito = await _editarFigura(figura.id, figuraData);
+            final exito = await _editarFigura(figura, figuraData);
             if (exito && mounted) {
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
@@ -378,7 +332,7 @@ class _PantallaGestionFigurasState extends State<PantallaGestionFiguras> with Si
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('❌ Error: $e'),
+                  content: Text('❌ Error editando: ${e.toString()}'),
                   backgroundColor: ColoresApp.error,
                 ),
               );
@@ -415,65 +369,98 @@ class _PantallaGestionFigurasState extends State<PantallaGestionFiguras> with Si
       ),
     );
 
-    if (confirmar == true) {
-      try {
-        setState(() => _cargando = true);
-        await _eliminarFigura(figura);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('✅ Figura eliminada exitosamente'),
-              backgroundColor: ColoresApp.exito,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('❌ Error eliminando figura: $e'),
-              backgroundColor: ColoresApp.error,
-            ),
-          );
-        }
-      } finally {
-        if (mounted) setState(() => _cargando = false);
+    if (confirmar != true) return;
+
+    setState(() => _cargando = true);
+    try {
+      final List<Future<void>> deleteFutures = [];
+      if (figura.imagenSeleccionPublicId.isNotEmpty) {
+        deleteFutures.add(_cloudinaryService.eliminarImagen(figura.imagenSeleccionPublicId));
       }
+      for (final publicId in figura.imagenesExtraPublicIds) {
+        if (publicId.isNotEmpty) {
+          deleteFutures.add(_cloudinaryService.eliminarImagen(publicId));
+        }
+      }
+      await Future.wait(deleteFutures);
+
+      final exito = await _firebaseService.eliminarFiguraPermanente(figura.id);
+
+      if (!exito) throw Exception('No se pudo eliminar la figura de la base de datos.');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Figura eliminada exitosamente'),
+            backgroundColor: ColoresApp.exito,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error eliminando figura: ${e.toString()}'),
+            backgroundColor: ColoresApp.error,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _cargando = false);
     }
   }
 
   Future<bool> _crearFigura(Map<String, dynamic> figuraData) async {
     try {
-      // Subir imágenes a Cloudinary
-      final imagenSeleccionUrl = await _subirImagen(figuraData['imagenSeleccion']);
-      final imagenesExtraUrls = await _subirImagenesExtra(figuraData['imagenesExtra']);
+      if (figuraData['imagenSeleccion'] == null) throw Exception('La imagen principal es obligatoria');
 
-      // Crear figura
+      String imagenSeleccionUrl = '';
+      String imagenSeleccionPublicId = '';
+
+      final response = await _cloudinaryService.subirImagenPublicidad(figuraData['imagenSeleccion']);
+      if (response != null && response.secureUrl.isNotEmpty) {
+        imagenSeleccionUrl = response.secureUrl;
+        imagenSeleccionPublicId = response.publicId;
+      } else {
+        throw Exception('Error subiendo imagen principal a Cloudinary');
+      }
+
+      final List<String> imagenesExtraUrls = [];
+      final List<String> imagenesExtraPublicIds = [];
+
+      for (final imagen in (figuraData['imagenesExtra'] as List<XFile>)) {
+        final extraResponse = await _cloudinaryService.subirImagenPublicidad(imagen);
+        if (extraResponse != null && extraResponse.secureUrl.isNotEmpty) {
+          imagenesExtraUrls.add(extraResponse.secureUrl);
+          imagenesExtraPublicIds.add(extraResponse.publicId);
+        }
+      }
+
       final figura = Figura(
         id: '',
         nombre: figuraData['nombre'],
         tipo: figuraData['tipo'],
         descripcion: figuraData['descripcion'] ?? '',
-        imagenSeleccion: imagenSeleccionUrl['url'] ?? '',
-        imagenesExtra: imagenesExtraUrls.map((img) => img['url'] as String).toList(),
-        imagenSeleccionPublicId: imagenSeleccionUrl['publicId'] ?? '',
-        imagenesExtraPublicIds: imagenesExtraUrls.map((img) => img['publicId'] as String).toList(),
+        imagenSeleccion: imagenSeleccionUrl,
+        imagenesExtra: imagenesExtraUrls,
+        imagenSeleccionPublicId: imagenSeleccionPublicId,
+        imagenesExtraPublicIds: imagenesExtraPublicIds,
         bluetoothConfig: ConfiguracionBluetooth(
-          tipoModulo: figuraData['bluetoothTipo'],
+          tipoModulo: figuraData['bluetoothTipo'] ?? 'classic',
           nombreDispositivo: figuraData['bluetoothNombre'],
         ),
         componentes: ComponentesFigura(
           leds: ConfiguracionLeds(
-            cantidad: figuraData['ledsQuantity'],
+            cantidad: figuraData['ledsQuantity'] ?? 0,
             nombres: List<String>.from(figuraData['ledsNombres'] ?? []),
           ),
           musica: ConfiguracionMusica(
-            disponible: figuraData['musicaDisponible'],
+            disponible: figuraData['musicaDisponible'] ?? false,
             cantidad: figuraData['musicaQuantity'] ?? 0,
             canciones: List<String>.from(figuraData['musicaNombres'] ?? []),
           ),
           humidificador: ConfiguracionHumidificador(
-            disponible: figuraData['humoDisponible'],
+            disponible: figuraData['humoDisponible'] ?? false,
           ),
         ),
         activo: true,
@@ -483,55 +470,75 @@ class _PantallaGestionFigurasState extends State<PantallaGestionFiguras> with Si
       final figuraId = await _firebaseService.crearFigura(figura);
       return figuraId != null;
     } catch (e) {
-      print('Error creando figura: $e');
-      return false;
+      rethrow;
     }
   }
 
-  Future<bool> _editarFigura(String figuraId, Map<String, dynamic> figuraData) async {
-    // Similar a _crearFigura pero actualizando
-    // Implementar lógica de actualización
-    return true;
-  }
+  Future<bool> _editarFigura(Figura figuraActual, Map<String, dynamic> figuraData) async {
+    try {
+      String imagenSeleccionUrl = figuraActual.imagenSeleccion;
+      String imagenSeleccionPublicId = figuraActual.imagenSeleccionPublicId;
 
-  Future<void> _eliminarFigura(Figura figura) async {
-    // Eliminar imágenes de Cloudinary
-    if (figura.imagenSeleccionPublicId.isNotEmpty) {
-      await _cloudinaryService.eliminarImagen(figura.imagenSeleccionPublicId);
-    }
-    for (final publicId in figura.imagenesExtraPublicIds) {
-      if (publicId.isNotEmpty) {
-        await _cloudinaryService.eliminarImagen(publicId);
+      if (figuraData['imagenSeleccion'] != null) {
+        if (figuraActual.imagenSeleccionPublicId.isNotEmpty) {
+          await _cloudinaryService.eliminarImagen(figuraActual.imagenSeleccionPublicId);
+        }
+        final response = await _cloudinaryService.subirImagenPublicidad(figuraData['imagenSeleccion']);
+        if (response != null && response.secureUrl.isNotEmpty) {
+          imagenSeleccionUrl = response.secureUrl;
+          imagenSeleccionPublicId = response.publicId;
+        }
       }
+
+      final List<XFile> nuevasImagenesExtra = figuraData['imagenesExtra'] as List<XFile>;
+      List<String> urlsFinales = [];
+      List<String> idsFinales = [];
+
+      urlsFinales.addAll(figuraData['imagenesExtraUrlExistentes']);
+
+      for (final imagen in nuevasImagenesExtra) {
+        final extraResponse = await _cloudinaryService.subirImagenPublicidad(imagen);
+        if (extraResponse != null && extraResponse.secureUrl.isNotEmpty) {
+          urlsFinales.add(extraResponse.secureUrl);
+          idsFinales.add(extraResponse.publicId);
+        }
+      }
+
+      final figuraActualizada = figuraActual.copiarCon(
+        nombre: figuraData['nombre'],
+        tipo: figuraData['tipo'],
+        descripcion: figuraData['descripcion'] ?? '',
+        imagenSeleccion: imagenSeleccionUrl,
+        imagenesExtra: urlsFinales,
+        imagenSeleccionPublicId: imagenSeleccionPublicId,
+        imagenesExtraPublicIds: idsFinales,
+        bluetoothConfig: ConfiguracionBluetooth(
+          tipoModulo: figuraData['bluetoothTipo'] ?? 'classic',
+          nombreDispositivo: figuraData['bluetoothNombre'],
+        ),
+        componentes: ComponentesFigura(
+          leds: ConfiguracionLeds(
+            cantidad: figuraData['ledsQuantity'] ?? 0,
+            nombres: List<String>.from(figuraData['ledsNombres'] ?? []),
+          ),
+          musica: ConfiguracionMusica(
+            disponible: figuraData['musicaDisponible'] ?? false,
+            cantidad: figuraData['musicaQuantity'] ?? 0,
+            canciones: List<String>.from(figuraData['musicaNombres'] ?? []),
+          ),
+          humidificador: ConfiguracionHumidificador(
+            disponible: figuraData['humoDisponible'] ?? false,
+          ),
+        ),
+      );
+
+      return await _firebaseService.actualizarFigura(figuraActual.id, figuraActualizada);
+    } catch (e) {
+      rethrow;
     }
-
-    // Eliminar de Firestore
-    // Implementar eliminación en FirebaseService
-  }
-
-  Future<Map<String, String>> _subirImagen(XFile? imagen) async {
-    if (imagen == null) return {'url': '', 'publicId': ''};
-
-    final response = await _cloudinaryService.subirImagenPublicidad(imagen);
-    return {
-      'url': response?.secureUrl ?? '',
-      'publicId': response?.publicId ?? '',
-    };
-  }
-
-  Future<List<Map<String, String>>> _subirImagenesExtra(List<XFile> imagenes) async {
-    final List<Map<String, String>> resultados = [];
-
-    for (final imagen in imagenes) {
-      final resultado = await _subirImagen(imagen);
-      resultados.add(resultado);
-    }
-
-    return resultados;
   }
 }
 
-// Widget separado para el diálogo de crear/editar figura
 class _DialogoFigura extends StatefulWidget {
   final String titulo;
   final Figura? figura;
@@ -554,21 +561,26 @@ class _DialogoFiguraState extends State<_DialogoFigura> {
   final _nombreController = TextEditingController();
   final _descripcionController = TextEditingController();
   final _bluetoothNombreController = TextEditingController();
+  final _scrollController = ScrollController();
 
   String _tipoSeleccionado = 'nave';
   String _bluetoothTipo = 'classic';
-  int _ledsQuantity = 1;
+  int _ledsQuantity = 0;
   bool _musicaDisponible = false;
   int _musicaQuantity = 0;
   bool _humoDisponible = false;
 
-  List<String> _ledsNombres = [];
-  List<String> _musicaNombres = [];
+  List<TextEditingController> _ledsNombresControllers = [];
+  List<TextEditingController> _musicaNombresControllers = [];
 
   XFile? _imagenSeleccion;
-  List<XFile> _imagenesExtra = [];
+  final List<XFile> _imagenesExtra = [];
+
+  String? _imagenSeleccionUrlExistente;
+  List<String> _imagenesExtraUrlExistentes = [];
 
   final ImagePicker _imagePicker = ImagePicker();
+  bool _guardando = false;
 
   @override
   void initState() {
@@ -578,33 +590,37 @@ class _DialogoFiguraState extends State<_DialogoFigura> {
 
   void _inicializarFormulario() {
     if (widget.figura != null) {
-      // Edición: cargar datos existentes
-      final figura = widget.figura!;
-      _nombreController.text = figura.nombre;
-      _descripcionController.text = figura.descripcion;
-      _bluetoothNombreController.text = figura.bluetoothConfig.nombreDispositivo;
-      _tipoSeleccionado = figura.tipo;
-      _bluetoothTipo = figura.bluetoothConfig.tipoModulo;
-      _ledsQuantity = figura.componentes.leds.cantidad;
-      _musicaDisponible = figura.componentes.musica.disponible;
-      _musicaQuantity = figura.componentes.musica.cantidad;
-      _humoDisponible = figura.componentes.humidificador.disponible;
-      _ledsNombres = List.from(figura.componentes.leds.nombres);
-      _musicaNombres = List.from(figura.componentes.musica.canciones);
+      final f = widget.figura!;
+      _nombreController.text = f.nombre;
+      _descripcionController.text = f.descripcion;
+      _bluetoothNombreController.text = f.bluetoothConfig.nombreDispositivo;
+      _tipoSeleccionado = f.tipo;
+      _bluetoothTipo = f.bluetoothConfig.tipoModulo;
+      _ledsQuantity = f.componentes.leds.cantidad;
+      _musicaDisponible = f.componentes.musica.disponible;
+      _musicaQuantity = f.componentes.musica.cantidad;
+      _humoDisponible = f.componentes.humidificador.disponible;
+
+      _imagenSeleccionUrlExistente = f.imagenSeleccion;
+      _imagenesExtraUrlExistentes = List.from(f.imagenesExtra);
+
+      _ledsNombresControllers = f.componentes.leds.nombres.map((nombre) => TextEditingController(text: nombre)).toList();
+      _musicaNombresControllers = f.componentes.musica.canciones.map((nombre) => TextEditingController(text: nombre)).toList();
     } else {
-      // Creación: valores por defecto
       _tipoSeleccionado = widget.tipoInicial ?? 'nave';
-      _ledsNombres = ['LED 1'];
-      _inicializarNombresLeds();
     }
   }
 
-  void _inicializarNombresLeds() {
-    _ledsNombres = List.generate(_ledsQuantity, (index) => 'LED ${index + 1}');
-  }
+  void _actualizarControladores(List<TextEditingController> controllers, int nuevaCantidad, String prefijo) {
+    if (nuevaCantidad == controllers.length) return;
 
-  void _inicializarNombresMusica() {
-    _musicaNombres = List.generate(_musicaQuantity, (index) => 'Canción ${index + 1}');
+    while (nuevaCantidad < controllers.length) {
+      controllers.removeLast().dispose();
+    }
+    while (nuevaCantidad > controllers.length) {
+      controllers.add(TextEditingController(text: '$prefijo ${controllers.length + 1}'));
+    }
+    setState(() {});
   }
 
   @override
@@ -612,380 +628,362 @@ class _DialogoFiguraState extends State<_DialogoFigura> {
     _nombreController.dispose();
     _descripcionController.dispose();
     _bluetoothNombreController.dispose();
+    _scrollController.dispose();
+    for (var controller in _ledsNombresControllers) {
+      controller.dispose();
+    }
+    for (var controller in _musicaNombresControllers) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final screenSize = MediaQuery.of(context).size;
+    final isLargeScreen = screenSize.width > 600;
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(16),
-      child: Container(
-        constraints: const BoxConstraints(maxHeight: 700, maxWidth: 500),
-        decoration: BoxDecoration(
-          color: ColoresApp.tarjetaOscura,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: ColoresApp.bordeGris),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: ColoresApp.cyanPrimario.withOpacity(0.1),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.add_box, color: ColoresApp.cyanPrimario),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      widget.titulo,
-                      style: const TextStyle(
-                        color: ColoresApp.textoPrimario,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+      insetPadding: EdgeInsets.all(isLargeScreen ? 24 : 12),
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Container(
+          width: isLargeScreen ? 600 : double.infinity,
+          height: screenSize.height * 0.9,
+          decoration: BoxDecoration(
+            color: ColoresApp.tarjetaOscura,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: ColoresApp.bordeGris),
+          ),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              children: [
+                _construirHeader(),
+                Expanded(
+                  child: Scrollbar(
+                    controller: _scrollController,
+                    thumbVisibility: true,
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _construirSeccionBasica(),
+                          const SizedBox(height: 24),
+                          _construirSeccionBluetooth(),
+                          const SizedBox(height: 24),
+                          _construirSeccionImagenes(),
+                          const SizedBox(height: 24),
+                          _construirSeccionComponentes(),
+                        ],
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(Icons.close, color: ColoresApp.textoSecundario),
-                  ),
-                ],
-              ),
-            ),
-
-            // Formulario
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _construirSeccionBasica(),
-                      const SizedBox(height: 20),
-                      _construirSeccionBluetooth(),
-                      const SizedBox(height: 20),
-                      _construirSeccionImagenes(),
-                      const SizedBox(height: 20),
-                      _construirSeccionComponentes(),
-                    ],
-                  ),
                 ),
-              ),
+                _construirFooter(),
+              ],
             ),
-
-            // Botones de acción
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border(top: BorderSide(color: ColoresApp.bordeGris)),
-              ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancelar'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _guardarFigura,
-                      style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
-                      child: const Text('Guardar'),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _construirHeader() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: ColoresApp.superficieOscura,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      child: Row(
+        children: [
+          Icon(widget.figura == null ? Icons.add_box : Icons.edit, color: ColoresApp.cyanPrimario),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              widget.titulo,
+              style: const TextStyle(color: ColoresApp.textoPrimario, fontSize: 18, fontWeight: FontWeight.w600),
+            ),
+          ),
+          IconButton(
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close, color: ColoresApp.textoSecundario),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _construirFooter() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ColoresApp.superficieOscura,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(16)),
+        border: Border(top: BorderSide(color: ColoresApp.bordeGris)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: _guardando ? null : _guardarFigura,
+              icon: _guardando
+                  ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+                  : const Icon(Icons.save, size: 18),
+              label: Text(_guardando ? 'Guardando...' : 'Guardar'),
+              style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.cyanPrimario),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _seccion(String titulo, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          titulo,
+          style: const TextStyle(color: ColoresApp.textoPrimario, fontSize: 16, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 16),
+        ...children,
+      ],
     );
   }
 
   Widget _construirSeccionBasica() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'INFORMACIÓN BÁSICA',
-          style: TextStyle(
-            color: ColoresApp.textoPrimario,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+    return _seccion('Información Básica', [
+      DropdownButtonFormField<String>(
+        value: _tipoSeleccionado,
+        style: const TextStyle(color: ColoresApp.textoPrimario),
+        decoration: const InputDecoration(
+          labelText: 'Tipo',
+          prefixIcon: Icon(Icons.category, color: ColoresApp.cyanPrimario),
         ),
-        const SizedBox(height: 12),
-
-        // Tipo
-        DropdownButtonFormField<String>(
-          value: _tipoSeleccionado,
-          style: const TextStyle(color: ColoresApp.textoPrimario),
-          decoration: const InputDecoration(
-            labelText: 'Tipo',
-            prefixIcon: Icon(Icons.category, color: ColoresApp.cyanPrimario),
-          ),
-          dropdownColor: ColoresApp.tarjetaOscura,
-          items: const [
-            DropdownMenuItem(value: 'nave', child: Text('Nave')),
-            DropdownMenuItem(value: 'diorama', child: Text('Diorama')),
-          ],
-          onChanged: (value) => setState(() => _tipoSeleccionado = value ?? 'nave'),
-          validator: (value) => value == null ? 'Selecciona un tipo' : null,
+        dropdownColor: ColoresApp.tarjetaOscura,
+        items: const [
+          DropdownMenuItem(value: 'nave', child: Text('Nave')),
+          DropdownMenuItem(value: 'diorama', child: Text('Diorama')),
+        ],
+        onChanged: (value) => setState(() => _tipoSeleccionado = value ?? 'nave'),
+        validator: (value) => value == null ? 'Selecciona un tipo' : null,
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _nombreController,
+        style: const TextStyle(color: ColoresApp.textoPrimario),
+        decoration: const InputDecoration(
+          labelText: 'Nombre',
+          prefixIcon: Icon(Icons.title, color: ColoresApp.cyanPrimario),
         ),
-        const SizedBox(height: 16),
-
-        // Nombre
-        TextFormField(
-          controller: _nombreController,
-          style: const TextStyle(color: ColoresApp.textoPrimario),
-          decoration: const InputDecoration(
-            labelText: 'Nombre',
-            prefixIcon: Icon(Icons.title, color: ColoresApp.cyanPrimario),
-          ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'El nombre es obligatorio';
-            }
-            return null;
-          },
+        validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es obligatorio' : null,
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _descripcionController,
+        style: const TextStyle(color: ColoresApp.textoPrimario),
+        decoration: const InputDecoration(
+          labelText: 'Descripción (Opcional)',
+          prefixIcon: Icon(Icons.description, color: ColoresApp.cyanPrimario),
         ),
-        const SizedBox(height: 16),
-
-        // Descripción
-        TextFormField(
-          controller: _descripcionController,
-          style: const TextStyle(color: ColoresApp.textoPrimario),
-          decoration: const InputDecoration(
-            labelText: 'Descripción (Opcional)',
-            prefixIcon: Icon(Icons.description, color: ColoresApp.cyanPrimario),
-          ),
-          maxLines: 2,
-        ),
-      ],
-    );
+        maxLines: 3,
+      ),
+    ]);
   }
 
   Widget _construirSeccionBluetooth() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'CONFIGURACIÓN BLUETOOTH',
-          style: TextStyle(
-            color: ColoresApp.textoPrimario,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
+    return _seccion('Configuración Bluetooth', [
+      DropdownButtonFormField<String>(
+        value: _bluetoothTipo,
+        style: const TextStyle(color: ColoresApp.textoPrimario),
+        decoration: const InputDecoration(
+          labelText: 'Tipo de Módulo',
+          prefixIcon: Icon(Icons.bluetooth, color: ColoresApp.cyanPrimario),
         ),
-        const SizedBox(height: 12),
-
-        // Tipo Bluetooth
-        DropdownButtonFormField<String>(
-          value: _bluetoothTipo,
-          style: const TextStyle(color: ColoresApp.textoPrimario),
-          decoration: const InputDecoration(
-            labelText: 'Tipo de Módulo',
-            prefixIcon: Icon(Icons.bluetooth, color: ColoresApp.cyanPrimario),
-          ),
-          dropdownColor: ColoresApp.tarjetaOscura,
-          items: const [
-            DropdownMenuItem(value: 'classic', child: Text('Bluetooth Classic (HC-05/06)')),
-            DropdownMenuItem(value: 'ble', child: Text('Bluetooth Low Energy (BLE)')),
-          ],
-          onChanged: (value) => setState(() => _bluetoothTipo = value ?? 'classic'),
+        dropdownColor: ColoresApp.tarjetaOscura,
+        items: const [
+          DropdownMenuItem(value: 'classic', child: Text('Bluetooth Classic (HC-05/06)')),
+          DropdownMenuItem(value: 'ble', child: Text('Bluetooth Low Energy (BLE)')),
+        ],
+        onChanged: (value) => setState(() => _bluetoothTipo = value ?? 'classic'),
+      ),
+      const SizedBox(height: 16),
+      TextFormField(
+        controller: _bluetoothNombreController,
+        style: const TextStyle(color: ColoresApp.textoPrimario),
+        decoration: const InputDecoration(
+          labelText: 'Nombre del Dispositivo',
+          hintText: 'HC05_MiFigura',
+          prefixIcon: Icon(Icons.devices, color: ColoresApp.cyanPrimario),
         ),
-        const SizedBox(height: 16),
-
-        // Nombre dispositivo
-        TextFormField(
-          controller: _bluetoothNombreController,
-          style: const TextStyle(color: ColoresApp.textoPrimario),
-          decoration: const InputDecoration(
-            labelText: 'Nombre del Dispositivo',
-            hintText: 'HC05_MiFigura',
-            prefixIcon: Icon(Icons.devices, color: ColoresApp.cyanPrimario),
-          ),
-          validator: (value) {
-            if (value == null || value.trim().isEmpty) {
-              return 'El nombre del dispositivo es obligatorio';
-            }
-            return null;
-          },
-        ),
-      ],
-    );
+        validator: (v) => v == null || v.trim().isEmpty ? 'El nombre del dispositivo es obligatorio' : null,
+      ),
+    ]);
   }
 
   Widget _construirSeccionImagenes() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'IMÁGENES',
-          style: TextStyle(
-            color: ColoresApp.textoPrimario,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: 12),
-
-        // Imagen de selección
-        const Text(
-          'Imagen de Selección (Catálogo)',
-          style: TextStyle(color: ColoresApp.textoSecundario, fontSize: 14),
-        ),
-        const SizedBox(height: 8),
-        _construirSelectorImagen(
-          imagen: _imagenSeleccion,
-          onSeleccionar: () async {
-            final imagen = await _imagePicker.pickImage(source: ImageSource.gallery);
-            if (imagen != null) {
-              setState(() => _imagenSeleccion = imagen);
-            }
-          },
-          onEliminar: () => setState(() => _imagenSeleccion = null),
-        ),
-        const SizedBox(height: 16),
-
-        // Imágenes extra
-        const Text(
-          'Imágenes Extra (Hasta 2)',
-          style: TextStyle(color: ColoresApp.textoSecundario, fontSize: 14),
-        ),
-        const SizedBox(height: 8),
-        _construirImagenesExtra(),
-      ],
-    );
+    return _seccion('Imágenes', [
+      const Text('Imagen de Selección (Catálogo)', style: TextStyle(color: ColoresApp.textoSecundario)),
+      const SizedBox(height: 8),
+      _construirSelectorImagenPrincipal(),
+      const SizedBox(height: 16),
+      const Text('Imágenes Extra (Hasta 2)', style: TextStyle(color: ColoresApp.textoSecundario)),
+      const SizedBox(height: 8),
+      _construirSelectorImagenesExtra(),
+    ]);
   }
 
-  Widget _construirSelectorImagen({
-    required XFile? imagen,
-    required VoidCallback onSeleccionar,
-    required VoidCallback onEliminar,
-  }) {
+  Widget _construirSelectorImagenPrincipal() {
     return GestureDetector(
-      onTap: onSeleccionar,
+      onTap: () async {
+        final imagen = await _imagePicker.pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 1024);
+        if (imagen != null)
+          setState(() {
+            _imagenSeleccion = imagen;
+            _imagenSeleccionUrlExistente = null;
+          });
+      },
       child: Container(
-        height: 120,
+        height: 150,
         width: double.infinity,
         decoration: BoxDecoration(
           color: ColoresApp.superficieOscura,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: ColoresApp.bordeGris, style: BorderStyle.solid),        ),
-        child: imagen != null
-            ? Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.file(
-                File(imagen.path),
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
+          border: Border.all(color: ColoresApp.bordeGris, style: BorderStyle.solid),
+        ),
+        child: _imagenSeleccion != null
+            ? _buildImagePreview(Image.file(File(_imagenSeleccion!.path), fit: BoxFit.cover), () => setState(() => _imagenSeleccion = null))
+            : _imagenSeleccionUrlExistente != null && _imagenSeleccionUrlExistente!.isNotEmpty
+            ? _buildImagePreview(CachedNetworkImage(imageUrl: _imagenSeleccionUrlExistente!, fit: BoxFit.cover), () => setState(() => _imagenSeleccionUrlExistente = null))
+            : _buildImagePlaceholder(),
+      ),
+    );
+  }
+
+  Widget _construirSelectorImagenesExtra() {
+    return Column(
+      children: [
+        if (_imagenesExtra.isNotEmpty || _imagenesExtraUrlExistentes.isNotEmpty)
+          SizedBox(
+            height: 80,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              children: [
+                ..._imagenesExtraUrlExistentes.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final url = entry.value;
+                  return _buildExtraImagePreview(
+                    CachedNetworkImage(imageUrl: url, width: 80, height: 80, fit: BoxFit.cover),
+                        () => setState(() => _imagenesExtraUrlExistentes.removeAt(index)),
+                  );
+                }),
+                ..._imagenesExtra.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final file = entry.value;
+                  return _buildExtraImagePreview(
+                    Image.file(File(file.path), width: 80, height: 80, fit: BoxFit.cover),
+                        () => setState(() => _imagenesExtra.removeAt(index)),
+                  );
+                }),
+              ],
+            ),
+          ),
+        if (_imagenesExtra.length + _imagenesExtraUrlExistentes.length < 2)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final imagen = await _imagePicker.pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 1024);
+                  if (imagen != null) setState(() => _imagenesExtra.add(imagen));
+                },
+                icon: const Icon(Icons.add_a_photo_outlined),
+                label: Text('Agregar Imagen Extra (${_imagenesExtra.length + _imagenesExtraUrlExistentes.length}/2)'),
+                style: ElevatedButton.styleFrom(backgroundColor: ColoresApp.bordeGris, foregroundColor: ColoresApp.textoPrimario),
               ),
             ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildImagePreview(Widget imageWidget, VoidCallback onRemove) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(11),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          imageWidget,
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: onRemove,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                child: const Icon(Icons.close, color: Colors.white, size: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExtraImagePreview(Widget imageWidget, VoidCallback onRemove) {
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      width: 80,
+      height: 80,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            imageWidget,
             Positioned(
-              top: 8,
-              right: 8,
+              top: 2,
+              right: 2,
               child: GestureDetector(
-                onTap: onEliminar,
+                onTap: onRemove,
                 child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: ColoresApp.error,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.close, color: Colors.white, size: 16),
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                  child: const Icon(Icons.close, color: Colors.white, size: 14),
                 ),
               ),
             ),
-          ],
-        )
-            : const Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.add_photo_alternate, size: 32, color: ColoresApp.textoApagado),
-            SizedBox(height: 8),
-            Text('Tocar para seleccionar imagen', style: TextStyle(color: ColoresApp.textoApagado)),
           ],
         ),
       ),
     );
   }
 
-  Widget _construirImagenesExtra() {
-    return Column(
+  Widget _buildImagePlaceholder() {
+    return const Column(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        // Mostrar imágenes seleccionadas
-        if (_imagenesExtra.isNotEmpty)
-          SizedBox(
-            height: 80,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _imagenesExtra.length,
-              itemBuilder: (context, index) {
-                return Container(
-                  margin: const EdgeInsets.only(right: 8),
-                  child: Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          File(_imagenesExtra[index].path),
-                          width: 80,
-                          height: 80,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Positioned(
-                        top: 2,
-                        right: 2,
-                        child: GestureDetector(
-                          onTap: () => setState(() => _imagenesExtra.removeAt(index)),
-                          child: Container(
-                            padding: const EdgeInsets.all(2),
-                            decoration: BoxDecoration(
-                              color: ColoresApp.error,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.close, color: Colors.white, size: 12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ),
-
-        // Botón para agregar más imágenes
-        if (_imagenesExtra.length < 2)
-          ElevatedButton.icon(
-            onPressed: () async {
-              final imagen = await _imagePicker.pickImage(source: ImageSource.gallery);
-              if (imagen != null) {
-                setState(() => _imagenesExtra.add(imagen));
-              }
-            },
-            icon: const Icon(Icons.add),
-            label: Text('Agregar Imagen Extra (${_imagenesExtra.length}/2)'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColoresApp.bordeGris,
-              foregroundColor: ColoresApp.textoPrimario,
-            ),
-          ),
+        Icon(Icons.add_photo_alternate_outlined, size: 40, color: ColoresApp.textoApagado),
+        SizedBox(height: 8),
+        Text('Tocar para seleccionar imagen', style: TextStyle(color: ColoresApp.textoApagado)),
       ],
     );
   }
@@ -994,240 +992,158 @@ class _DialogoFiguraState extends State<_DialogoFigura> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'COMPONENTES',
-          style: TextStyle(
-            color: ColoresApp.textoPrimario,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
+        const Text('Componentes', style: TextStyle(color: ColoresApp.textoPrimario, fontSize: 16, fontWeight: FontWeight.w600)),
         const SizedBox(height: 16),
-
-        // LEDs
-        _construirSeccionLeds(),
-        const SizedBox(height: 20),
-
-        // Música
-        _construirSeccionMusica(),
-        const SizedBox(height: 20),
-
-        // Humidificador
-        _construirSeccionHumidificador(),
+        _buildComponenteLEDs(),
+        const SizedBox(height: 16),
+        _buildComponenteMusica(),
+        const SizedBox(height: 16),
+        _construirComponenteContainer(
+          icono: Icons.cloud,
+          titulo: 'Humidificador (Humo)',
+          color: ColoresApp.azulPrimario,
+          switchValue: _humoDisponible,
+          onSwitchChanged: (value) => setState(() => _humoDisponible = value),
+          child: const SizedBox.shrink(),
+        ),
       ],
     );
   }
 
-  Widget _construirSeccionLeds() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ColoresApp.superficieOscura,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ColoresApp.verdeAcento.withOpacity(0.3)),
-      ),
+  Widget _buildComponenteLEDs() {
+    return _construirComponenteContainer(
+      icono: Icons.lightbulb,
+      titulo: 'LEDs',
+      color: ColoresApp.verdeAcento,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.lightbulb, color: ColoresApp.verdeAcento),
-              const SizedBox(width: 8),
-              const Text(
-                'LEDs',
-                style: TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.w600),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-
-          // Cantidad de LEDs
           DropdownButtonFormField<int>(
             value: _ledsQuantity,
-            style: const TextStyle(color: ColoresApp.textoPrimario),
-            decoration: const InputDecoration(
-              labelText: 'Cantidad de LEDs',
-              border: OutlineInputBorder(),
-            ),
+            decoration: const InputDecoration(labelText: 'Cantidad de LEDs'),
             dropdownColor: ColoresApp.tarjetaOscura,
-            items: List.generate(6, (index) => index)
-                .map((value) => DropdownMenuItem(
-              value: value,
-              child: Text(value == 0 ? 'Sin LEDs' : '$value LED${value > 1 ? 's' : ''}'),
-            ))
-                .toList(),
+            items: List.generate(6, (i) => DropdownMenuItem(value: i, child: Text(i == 0 ? 'Sin LEDs' : '$i LED${i > 1 ? 's' : ''}'))),
             onChanged: (value) {
               setState(() {
                 _ledsQuantity = value ?? 0;
-                _inicializarNombresLeds();
+                _actualizarControladores(_ledsNombresControllers, _ledsQuantity, 'LED');
               });
             },
           ),
-
-          // Nombres de LEDs
           if (_ledsQuantity > 0) ...[
-            const SizedBox(height: 12),
-            const Text(
-              'Nombres de los LEDs:',
-              style: TextStyle(color: ColoresApp.textoSecundario, fontSize: 14),
-            ),
-            const SizedBox(height: 8),
-            ...List.generate(_ledsQuantity, (index) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: TextFormField(
-                  initialValue: _ledsNombres.length > index ? _ledsNombres[index] : 'LED ${index + 1}',
-                  style: const TextStyle(color: ColoresApp.textoPrimario),
-                  decoration: InputDecoration(
-                    labelText: 'LED ${index + 1}',
-                    border: const OutlineInputBorder(),
-                    isDense: true,
-                  ),
-                  onChanged: (value) {
-                    if (_ledsNombres.length > index) {
-                      _ledsNombres[index] = value;
-                    } else {
-                      _ledsNombres.add(value);
-                    }
-                  },
+            const SizedBox(height: 16),
+            ...List.generate(_ledsQuantity, (i) => Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: TextFormField(
+                controller: _ledsNombresControllers[i],
+                style: const TextStyle(color: ColoresApp.textoPrimario),
+                decoration: InputDecoration(
+                  labelText: 'Nombre LED ${i + 1}',
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.label_important_outline, size: 20),
                 ),
-              );
-            }),
+                validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es requerido' : null,
+              ),
+            )),
           ],
         ],
       ),
     );
   }
 
-  Widget _construirSeccionMusica() {
+  Widget _buildComponenteMusica() {
+    return _construirComponenteContainer(
+      icono: Icons.music_note,
+      titulo: 'Música',
+      color: ColoresApp.cyanPrimario,
+      switchValue: _musicaDisponible,
+      onSwitchChanged: (value) {
+        setState(() {
+          _musicaDisponible = value;
+          if (_musicaDisponible && _musicaQuantity == 0) {
+            _musicaQuantity = 1;
+          }
+          _actualizarControladores(_musicaNombresControllers, _musicaDisponible ? _musicaQuantity : 0, 'Canción');
+        });
+      },
+      child: !_musicaDisponible
+          ? const SizedBox.shrink()
+          : Column(
+        children: [
+          DropdownButtonFormField<int>(
+            value: _musicaQuantity,
+            decoration: const InputDecoration(labelText: 'Cantidad de Canciones'),
+            dropdownColor: ColoresApp.tarjetaOscura,
+            items: List.generate(5, (i) => DropdownMenuItem(value: i + 1, child: Text('${i + 1} Canción${i > 0 ? 'es' : ''}'))),
+            onChanged: (value) {
+              setState(() {
+                _musicaQuantity = value ?? 1;
+                _actualizarControladores(_musicaNombresControllers, _musicaQuantity, 'Canción');
+              });
+            },
+          ),
+          if (_musicaQuantity > 0) ...[
+            const SizedBox(height: 16),
+            ...List.generate(_musicaQuantity, (i) => Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: TextFormField(
+                controller: _musicaNombresControllers[i],
+                style: const TextStyle(color: ColoresApp.textoPrimario),
+                decoration: InputDecoration(
+                  labelText: 'Nombre Canción ${i + 1}',
+                  isDense: true,
+                  prefixIcon: const Icon(Icons.label_important_outline, size: 20),
+                ),
+                validator: (v) => v == null || v.trim().isEmpty ? 'El nombre es requerido' : null,
+              ),
+            )),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _construirComponenteContainer({
+    required IconData icono,
+    required String titulo,
+    required Color color,
+    required Widget child,
+    bool? switchValue,
+    Function(bool)? onSwitchChanged,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: ColoresApp.superficieOscura,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
+        border: Border.all(color: color.withOpacity(0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.music_note, color: ColoresApp.cyanPrimario),
+              Icon(icono, color: color),
               const SizedBox(width: 8),
-              const Text(
-                'Música',
-                style: TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.w600),
-              ),
-              const Spacer(),
-              Switch(
-                value: _musicaDisponible,
-                onChanged: (value) => setState(() {
-                  _musicaDisponible = value;
-                  if (!value) {
-                    _musicaQuantity = 0;
-                    _musicaNombres.clear();
-                  }
-                }),
-                activeColor: ColoresApp.cyanPrimario,
-              ),
+              Expanded(child: Text(titulo, style: const TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.w600))),
+              if (switchValue != null && onSwitchChanged != null)
+                Switch(
+                  value: switchValue,
+                  onChanged: onSwitchChanged,
+                  activeColor: color,
+                ),
             ],
           ),
-
-          if (_musicaDisponible) ...[
-            const SizedBox(height: 12),
-
-            // Cantidad de canciones
-            DropdownButtonFormField<int>(
-              value: _musicaQuantity,
-              style: const TextStyle(color: ColoresApp.textoPrimario),
-              decoration: const InputDecoration(
-                labelText: 'Cantidad de Canciones',
-                border: OutlineInputBorder(),
-              ),
-              dropdownColor: ColoresApp.tarjetaOscura,
-              items: List.generate(6, (index) => index + 1)
-                  .map((value) => DropdownMenuItem(
-                value: value,
-                child: Text('$value Canción${value > 1 ? 'es' : ''}'),
-              ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  _musicaQuantity = value ?? 1;
-                  _inicializarNombresMusica();
-                });
-              },
-            ),
-
-            // Nombres de canciones
-            if (_musicaQuantity > 0) ...[
-              const SizedBox(height: 12),
-              const Text(
-                'Nombres de las Canciones:',
-                style: TextStyle(color: ColoresApp.textoSecundario, fontSize: 14),
-              ),
-              const SizedBox(height: 8),
-              ...List.generate(_musicaQuantity, (index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: TextFormField(
-                    initialValue: _musicaNombres.length > index ? _musicaNombres[index] : 'Canción ${index + 1}',
-                    style: const TextStyle(color: ColoresApp.textoPrimario),
-                    decoration: InputDecoration(
-                      labelText: 'Canción ${index + 1}',
-                      border: const OutlineInputBorder(),
-                      isDense: true,
-                    ),
-                    onChanged: (value) {
-                      if (_musicaNombres.length > index) {
-                        _musicaNombres[index] = value;
-                      } else {
-                        _musicaNombres.add(value);
-                      }
-                    },
-                  ),
-                );
-              }),
-            ],
-          ],
+          if (child is! SizedBox) const SizedBox(height: 12),
+          child,
         ],
       ),
     );
   }
 
-  Widget _construirSeccionHumidificador() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ColoresApp.superficieOscura,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: ColoresApp.azulPrimario.withOpacity(0.3)),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.cloud, color: ColoresApp.azulPrimario),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              'Humidificador (Humo)',
-              style: TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.w600),
-            ),
-          ),
-          Switch(
-            value: _humoDisponible,
-            onChanged: (value) => setState(() => _humoDisponible = value),
-            activeColor: ColoresApp.azulPrimario,
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _guardarFigura() {
+  void _guardarFigura() async {
     if (!_formKey.currentState!.validate()) return;
 
-    // Validaciones adicionales
-    if (_imagenSeleccion == null && widget.figura?.imagenSeleccion.isEmpty != false) {
+    if (_imagenSeleccion == null && (_imagenSeleccionUrlExistente == null || _imagenSeleccionUrlExistente!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('La imagen de selección es obligatoria'),
@@ -1237,6 +1153,8 @@ class _DialogoFiguraState extends State<_DialogoFigura> {
       return;
     }
 
+    setState(() => _guardando = true);
+
     final figuraData = {
       'nombre': _nombreController.text.trim(),
       'tipo': _tipoSeleccionado,
@@ -1245,14 +1163,19 @@ class _DialogoFiguraState extends State<_DialogoFigura> {
       'bluetoothNombre': _bluetoothNombreController.text.trim(),
       'imagenSeleccion': _imagenSeleccion,
       'imagenesExtra': _imagenesExtra,
+      'imagenesExtraUrlExistentes': _imagenesExtraUrlExistentes,
       'ledsQuantity': _ledsQuantity,
-      'ledsNombres': _ledsNombres,
+      'ledsNombres': _ledsNombresControllers.map((c) => c.text.trim()).toList(),
       'musicaDisponible': _musicaDisponible,
       'musicaQuantity': _musicaQuantity,
-      'musicaNombres': _musicaNombres,
+      'musicaNombres': _musicaNombresControllers.map((c) => c.text.trim()).toList(),
       'humoDisponible': _humoDisponible,
     };
 
-    widget.onGuardar(figuraData);
+    try {
+      await widget.onGuardar(figuraData);
+    } finally {
+      if (mounted) setState(() => _guardando = false);
+    }
   }
 }
