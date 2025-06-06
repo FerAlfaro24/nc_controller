@@ -56,3 +56,9 @@ flutter:
 dependency_overrides:
   # Forzar versión específica de nested para evitar conflictos
   nested: ^1.0.0
+
+  # Permisos (para Bluetooth)
+  permission_handler: ^11.3.1
+
+  # Iconos
+  cupertino_icons: ^1.0.8
