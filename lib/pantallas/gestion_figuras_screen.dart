@@ -882,8 +882,7 @@ class _DialogoFiguraState extends State<_DialogoFigura> {
         decoration: BoxDecoration(
           color: ColoresApp.superficieOscura,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: ColoresApp.bordeGris, style: BorderStyle.dashed),
-        ),
+          border: Border.all(color: ColoresApp.bordeGris, style: BorderStyle.solid),        ),
         child: imagen != null
             ? Stack(
           children: [
