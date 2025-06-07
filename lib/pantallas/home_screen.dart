@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../nucleo/constantes/colores_app.dart'; // Asegúrate que esta ruta es correcta
-import '../servicios/auth_service.dart';         // Asegúrate que esta ruta es correcta
-import '../servicios/firebase_service.dart';      // Asegúrate que esta ruta es correcta
-import '../modelos/configuracion_app.dart';     // Asegúrate que esta ruta es correcta
-import '../widgets/publicidad_push_widget.dart'; // Asegúrate que esta ruta es correcta
-import '../widgets/complete_text_marquee.dart';   // Asegúrate que esta ruta es correcta
-import 'login_screen.dart';                     // Asegúrate que esta ruta es correcta
-// ✅ IMPORTACIONES NUEVAS PARA NAVEGACIÓN
-import 'catalogo_naves_screen.dart';            // Catálogo de Naves
-import 'catalogo_dioramas_screen.dart';         // Catálogo de Dioramas
+import '../nucleo/constantes/colores_app.dart';
+import '../servicios/auth_service.dart';
+import '../servicios/firebase_service.dart';
+import '../modelos/configuracion_app.dart';
+import '../widgets/publicidad_push_widget.dart';
+import '../widgets/complete_text_marquee.dart';
+import '../widgets/instagram_feed_widget.dart';
+import 'login_screen.dart';
+import 'catalogo_naves_screen.dart';
+import 'catalogo_dioramas_screen.dart';
 
 class PantallaHome extends StatefulWidget {
   const PantallaHome({super.key});
@@ -20,7 +20,7 @@ class PantallaHome extends StatefulWidget {
 }
 
 class _PantallaHomeState extends State<PantallaHome> {
-  bool _publicidadMostradaEnEstaSession = false; // Aunque menos crítica ahora, puede ser útil para otros flujos
+  bool _publicidadMostradaEnEstaSession = false;
   final FirebaseService _firebaseService = FirebaseService();
 
   @override
@@ -52,9 +52,6 @@ class _PantallaHomeState extends State<PantallaHome> {
 
       if (deberiaMostrarSegunFirebase) {
         print('✅ Publicidad CUMPLE condiciones de Firebase. Mostrando: "${publicidad.titulo}"');
-        // setState(() { // Opcional, ver comentarios en la versión anterior
-        //   _publicidadMostradaEnEstaSession = true;
-        // });
         if (mounted) {
           await PublicidadPushModal.mostrar(context, publicidad);
         }
@@ -115,7 +112,6 @@ class _PantallaHomeState extends State<PantallaHome> {
     }
   }
 
-  // ✅ NUEVA FUNCIÓN: Navegar a catálogo de naves
   void _navegarANaves() {
     print('🚀 Navegando a catálogo de naves...');
     Navigator.of(context).push(
@@ -127,7 +123,6 @@ class _PantallaHomeState extends State<PantallaHome> {
     });
   }
 
-  // ✅ NUEVA FUNCIÓN: Navegar a catálogo de dioramas
   void _navegarADioramas() {
     print('🏛️ Navegando a catálogo de dioramas...');
     Navigator.of(context).push(
@@ -141,272 +136,352 @@ class _PantallaHomeState extends State<PantallaHome> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: const Text('NABOO CUSTOMS'),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+    return WillPopScope(
+      onWillPop: _confirmarSalidaApp,
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          title: const Text('NABOO CUSTOMS'),
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
           ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.campaign, color: ColoresApp.naranjaAcento),
+              onPressed: _debugMostrarPublicidad,
+              tooltip: 'Debug Publicidad',
+            ),
+          ],
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.campaign, color: ColoresApp.naranjaAcento),
-            onPressed: _debugMostrarPublicidad,
-            tooltip: 'Debug Publicidad',
+        drawer: _construirDrawer(context),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF0F0F0F),
+                Color(0xFF0A0A0F),
+              ],
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.rocket_launch),
-            onPressed: () {
-              // Acción para el cohete
-            },
-          ),
-        ],
-      ),
-      drawer: _construirDrawer(context),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0F0F0F),
-              Color(0xFF0A0A0F),
-            ],
-          ),
-        ),
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              StreamBuilder<ConfiguracionApp>(
-                stream: _firebaseService.obtenerConfiguracion(),
-                builder: (context, snapshot) {
-                  print('🏠 StreamBuilder marquee - ConnectionState: ${snapshot.connectionState}, HasData: ${snapshot.hasData}, HasError: ${snapshot.hasError}');
-                  if (snapshot.hasError) {
-                    print('   Error en Stream Marquee: ${snapshot.error}');
-                  }
-                  String textoMarquee = '¡Bienvenido a Naboo Customs! 🚀';
-                  if (snapshot.hasData) {
-                    final configuracion = snapshot.data!;
-                    if (configuracion.textoMarquee.isNotEmpty) {
-                      textoMarquee = configuracion.textoMarquee;
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                StreamBuilder<ConfiguracionApp>(
+                  stream: _firebaseService.obtenerConfiguracion(),
+                  builder: (context, snapshot) {
+                    print('🏠 StreamBuilder marquee - ConnectionState: ${snapshot.connectionState}, HasData: ${snapshot.hasData}, HasError: ${snapshot.hasError}');
+                    if (snapshot.hasError) {
+                      print('   Error en Stream Marquee: ${snapshot.error}');
                     }
-                    print('🎨 Texto marquee actualizado: "$textoMarquee"');
-                  } else if (snapshot.connectionState == ConnectionState.waiting) {
-                    textoMarquee = 'Cargando noticias...';
-                  } else if (snapshot.hasError) {
-                    textoMarquee = 'Error al cargar noticias.';
-                  }
-                  return Container(
-                    key: ValueKey(textoMarquee),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: CompleteTextMarquee(
-                      text: textoMarquee,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.5,
+                    String textoMarquee = '¡Bienvenido a Naboo Customs! 🚀';
+                    if (snapshot.hasData) {
+                      final configuracion = snapshot.data!;
+                      if (configuracion.textoMarquee.isNotEmpty) {
+                        textoMarquee = configuracion.textoMarquee;
+                      }
+                      print('🎨 Texto marquee actualizado: "$textoMarquee"');
+                    } else if (snapshot.connectionState == ConnectionState.waiting) {
+                      textoMarquee = 'Cargando noticias...';
+                    } else if (snapshot.hasError) {
+                      textoMarquee = 'Error al cargar noticias.';
+                    }
+                    return Container(
+                      key: ValueKey(textoMarquee),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      duration: const Duration(seconds: 10),
-                      height: 40,
-                      backgroundColor: Colors.black.withOpacity(0.5),
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 32),
-
-              const Text(
-                'CENTRO DE CONTROL',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 1.2,
+                      child: CompleteTextMarquee(
+                        text: textoMarquee,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          letterSpacing: 0.5,
+                        ),
+                        duration: const Duration(seconds: 10),
+                        height: 40,
+                        backgroundColor: Colors.black.withOpacity(0.5),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      ),
+                    );
+                  },
                 ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Controla tus figuras futuristas',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16,
+                const SizedBox(height: 32),
+                const Text(
+                  'CENTRO DE CONTROL',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
-
-              // ✅ TARJETAS PRINCIPALES CORREGIDAS CON NAVEGACIÓN REAL
-              Row(
-                children: [
-                  Expanded(
-                    child: _tarjetaNavegacion(
-                      'NAVES',
-                      Icons.rocket,
-                      ColoresApp.azulPrimario,
-                      _navegarANaves, // ✅ FUNCIÓN REAL DE NAVEGACIÓN
-                    ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Controla tus figuras futuristas',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 16,
                   ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _tarjetaNavegacion(
-                      'DIORAMAS',
-                      Icons.landscape,
-                      ColoresApp.moradoPrimario,
-                      _navegarADioramas, // ✅ FUNCIÓN REAL DE NAVEGACIÓN
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _tarjetaNavegacion(
-                      'BLUETOOTH',
-                      Icons.bluetooth,
-                      ColoresApp.cyanPrimario,
-                          () {
-                        _mostrarEnConstruccion(context, 'Bluetooth');
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _tarjetaNavegacion(
-                      'PERFIL',
-                      Icons.person,
-                      ColoresApp.verdeAcento,
-                          () {
-                        _mostrarEnConstruccion(context, 'Perfil');
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 32),
-
-              // ✅ SECCIÓN DEBUG DE PUBLICIDAD ELIMINADA DE LA UI
-              // Ya no se mostrará el recuadro de debug de publicidad aquí.
-
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: ColoresApp.tarjetaOscura,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: ColoresApp.bordeGris),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(height: 32),
+                Row(
                   children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.monitor_heart,
-                          color: ColoresApp.cyanPrimario,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'ESTADO DEL SISTEMA',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
+                    Expanded(
+                      child: _tarjetaNavegacion(
+                        'NAVES',
+                        Icons.rocket,
+                        ColoresApp.azulPrimario,
+                        _navegarANaves,
+                      ),
                     ),
-                    const SizedBox(height: 16),
-                    _itemEstado('Firebase', true, 'Conectado (verificar datos)'),
-                    _itemEstado('Bluetooth', false, 'Desconectado (requiere acción)'),
-                    _itemEstado('Figuras', true, '4 disponibles (simulado)'),
-                    _itemEstado('Cloudinary', true, 'Imágenes activas (simulado)'),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: ColoresApp.tarjetaOscura,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: ColoresApp.bordeGris),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.link,
-                          color: ColoresApp.verdeAcento,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 12),
-                        const Text(
-                          'ENLACES RÁPIDOS',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _botonEnlace(
-                            'Instagram',
-                            Icons.camera_alt,
-                            ColoresApp.rosaAcento,
-                            'https://www.instagram.com/naboo.customs/',
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _botonEnlace(
-                            'Facebook',
-                            Icons.facebook,
-                            ColoresApp.azulPrimario,
-                            'https://www.facebook.com/Nabbo.customs/',
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      width: double.infinity,
-                      child: _botonEnlace(
-                        'Catálogo en Drive',
-                        Icons.folder_open,
-                        ColoresApp.naranjaAcento,
-                        'https://drive.google.com/drive/folders/1bzZ8g6QDotavLFLg9h5puTd4bvqoBCQL',
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _tarjetaNavegacion(
+                        'DIORAMAS',
+                        Icons.landscape,
+                        ColoresApp.moradoPrimario,
+                        _navegarADioramas,
                       ),
                     ),
                   ],
                 ),
-              ),
-
-              const SizedBox(height: 100),
-            ],
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: ColoresApp.tarjetaOscura,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: ColoresApp.bordeGris),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.link,
+                            color: ColoresApp.verdeAcento,
+                            size: 24,
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'ENLACES RÁPIDOS',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _botonEnlace(
+                              'Instagram',
+                              Icons.camera_alt,
+                              ColoresApp.rosaAcento,
+                              'https://www.instagram.com/naboo.customs/',
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _botonEnlace(
+                              'Facebook',
+                              Icons.facebook,
+                              ColoresApp.azulPrimario,
+                              'https://www.facebook.com/Nabbo.customs/',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: _botonEnlace(
+                          'Catálogo en Drive',
+                          Icons.folder_open,
+                          ColoresApp.naranjaAcento,
+                          'https://drive.google.com/drive/folders/1bzZ8g6QDotavLFLg9h5puTd4bvqoBCQL',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: ColoresApp.tarjetaOscura,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: ColoresApp.bordeGris),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  Color(0xFF833AB4),
+                                  Color(0xFFE1306C),
+                                  Color(0xFFFCAF45),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.camera_alt,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          const Text(
+                            'SÍGUENOS EN INSTAGRAM',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      const InstagramFeedWidget(),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 100),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Future<bool> _confirmarSalidaApp() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF252525),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.logout,
+              color: ColoresApp.advertencia,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Cerrar Sesión',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          '¿Estás seguro de que quieres cerrar sesión y regresar al inicio?',
+          style: TextStyle(
+            color: Colors.grey,
+            fontSize: 16,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text('Cerrar Sesión'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ColoresApp.advertencia,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true) {
+      await _cerrarSesionYRegresarLogin();
+    }
+
+    return false;
+  }
+
+  Future<void> _cerrarSesionYRegresarLogin() async {
+    try {
+      print('🚪 Cerrando sesión desde botón atrás...');
+
+      final authService = AuthService();
+      await authService.cerrarSesion();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Sesión cerrada correctamente'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      print("❌ Error al cerrar sesión desde botón atrás: $e");
+
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const PantallaLogin()),
+              (route) => false,
+        );
+      }
+    }
   }
 
   Widget _construirDrawer(BuildContext context) {
@@ -463,7 +538,6 @@ class _PantallaHomeState extends State<PantallaHome> {
               padding: EdgeInsets.zero,
               children: [
                 _itemDrawer(context, Icons.home, 'INICIO', () => Navigator.pop(context)),
-                // ✅ NAVEGACIÓN REAL EN EL DRAWER TAMBIÉN
                 _itemDrawer(context, Icons.rocket, 'NAVES', () {
                   Navigator.pop(context);
                   _navegarANaves();
@@ -472,15 +546,7 @@ class _PantallaHomeState extends State<PantallaHome> {
                   Navigator.pop(context);
                   _navegarADioramas();
                 }),
-                _itemDrawer(context, Icons.bluetooth_searching, 'BLUETOOTH', () {
-                  Navigator.pop(context);
-                  _mostrarEnConstruccion(context, 'Bluetooth');
-                }),
                 const Divider(color: Color(0xFF404040), height: 1, thickness: 1),
-                _itemDrawer(context, Icons.person_outline, 'PERFIL', () {
-                  Navigator.pop(context);
-                  _mostrarEnConstruccion(context, 'Perfil');
-                }),
                 _itemDrawer(context, Icons.help_outline, 'AYUDA', () {
                   Navigator.pop(context);
                   _mostrarAyuda(context);
@@ -493,74 +559,89 @@ class _PantallaHomeState extends State<PantallaHome> {
             padding: const EdgeInsets.all(8.0),
             child: _itemDrawer(context, Icons.exit_to_app, 'CERRAR SESIÓN', () async {
               Navigator.pop(context);
-              final confirmar = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  backgroundColor: const Color(0xFF252525),
-                  title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.white)),
-                  content: const Text('¿Estás seguro de que quieres cerrar sesión?', style: TextStyle(color: Colors.grey)),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(false),
-                      child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-                    ),
-                    ElevatedButton(
-                      onPressed: () => Navigator.of(context).pop(true),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-                      child: const Text('Cerrar Sesión'),
-                    ),
-                  ],
-                ),
-              );
-
-              if (confirmar == true && mounted) {
-                try {
-                  final authService = Provider.of<AuthService>(context, listen: false);
-                  await authService.cerrarSesion();
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Row(
-                          children: [
-                            Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
-                            SizedBox(width: 8),
-                            Text('¡Hasta luego! Sesión cerrada.'),
-                          ],
-                        ),
-                        backgroundColor: Colors.green,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                    await Future.delayed(const Duration(milliseconds: 500));
-                    if (mounted) {
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => const PantallaLogin()),
-                            (route) => false,
-                      );
-                    }
-                  }
-                } catch (e) {
-                  print("Error al cerrar sesión: $e");
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error al cerrar sesión: $e'),
-                        backgroundColor: ColoresApp.error,
-                      ),
-                    );
-                    await Future.delayed(const Duration(milliseconds: 300));
-                    Navigator.of(context).pushAndRemoveUntil(
-                      MaterialPageRoute(builder: (context) => const PantallaLogin()),
-                          (route) => false,
-                    );
-                  }
-                }
-              }
+              await _cerrarSesionSegura(context);
             }, esLogout: true),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _cerrarSesionSegura(BuildContext context) async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF252525),
+        title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.white)),
+        content: const Text('¿Estás seguro de que quieres cerrar sesión?', style: TextStyle(color: Colors.grey)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
+            child: const Text('Cerrar Sesión'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmar == true && mounted) {
+      try {
+        print('🚪 Iniciando proceso de cierre de sesión...');
+
+        final authService = AuthService();
+
+        await authService.cerrarSesion();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text('¡Hasta luego! Sesión cerrada.'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 2),
+            ),
+          );
+
+          await Future.delayed(const Duration(milliseconds: 500));
+
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                  (route) => false,
+            );
+          }
+        }
+      } catch (e) {
+        print("❌ Error al cerrar sesión: $e");
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error al cerrar sesión: $e'),
+              backgroundColor: ColoresApp.error,
+            ),
+          );
+
+          await Future.delayed(const Duration(milliseconds: 300));
+
+          if (mounted) {
+            Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                  (route) => false,
+            );
+          }
+        }
+      }
+    }
   }
 
   Widget _itemDrawer(BuildContext context, IconData icono, String titulo, VoidCallback onTap, {bool esLogout = false}) {
@@ -611,9 +692,9 @@ class _PantallaHomeState extends State<PantallaHome> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: color.withOpacity(0.3), width: 1.5)
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+                border: Border.all(color: color.withOpacity(0.3), width: 1.5),
               ),
               child: Icon(icono, size: 36, color: color),
             ),
@@ -621,52 +702,15 @@ class _PantallaHomeState extends State<PantallaHome> {
             Text(
               titulo,
               style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.5
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0.5,
               ),
               textAlign: TextAlign.center,
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _itemEstado(String titulo, bool activo, String descripcion) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
-      child: Row(
-        children: [
-          Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-                color: activo ? ColoresApp.exito : ColoresApp.error,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: (activo ? ColoresApp.exito : ColoresApp.error).withOpacity(0.5),
-                    blurRadius: 4,
-                  )
-                ]
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(titulo, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
-                if (descripcion.isNotEmpty) ...[
-                  const SizedBox(height: 2),
-                  Text(descripcion, style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                ]
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -729,40 +773,6 @@ class _PantallaHomeState extends State<PantallaHome> {
         );
       }
     }
-  }
-
-  void _mostrarEnConstruccion(BuildContext context, String seccion) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ColoresApp.tarjetaOscura,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Icon(Icons.construction_rounded, color: ColoresApp.naranjaAcento),
-            const SizedBox(width: 10),
-            Text('En Construcción', style: TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        content: Text(
-          'La sección "$seccion" está en pleno desarrollo.\n\n¡Muy pronto estará disponible con nuevas y emocionantes funcionalidades! Agradecemos tu paciencia.',
-          style: TextStyle(color: ColoresApp.textoSecundario, height: 1.4),
-          textAlign: TextAlign.center,
-        ),
-        actionsAlignment: MainAxisAlignment.center,
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: ColoresApp.cyanPrimario,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                textStyle: const TextStyle(fontWeight: FontWeight.bold)
-            ),
-            child: const Text('Entendido'),
-          ),
-        ],
-      ),
-    );
   }
 
   void _mostrarAyuda(BuildContext context) {

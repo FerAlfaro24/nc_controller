@@ -1,4 +1,3 @@
-// Archivo: lib/pantallas/admin_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,7 +9,7 @@ import '../widgets/auto_scrolling_text.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 import 'gestion_usuarios_screen.dart';
-import 'gestion_figuras_screen.dart'; // ✅ NUEVA IMPORTACIÓN
+import 'gestion_figuras_screen.dart';
 import 'utilidades_admin_screen.dart';
 import 'gestion_publicidad_screen.dart';
 
@@ -42,253 +41,360 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      appBar: AppBar(
-        title: const Text('PANEL ADMINISTRADOR'),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+  Future<bool> _confirmarSalidaAdmin() async {
+    final confirmar = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF252525),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        title: Row(
+          children: [
+            Icon(
+              Icons.logout,
+              color: ColoresApp.advertencia,
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Cerrar Sesión',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          '¿Estás seguro de que quieres cerrar sesión y regresar al inicio?',
+          style: TextStyle(
+            color: Colors.grey,
+            fontSize: 16,
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _cargarInfoSistema,
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text(
+              'Cancelar',
+              style: TextStyle(
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ),
-          IconButton(
-            icon: const Icon(Icons.admin_panel_settings),
-            onPressed: () => _mostrarInfoAdmin(context),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).pop(true),
+            icon: const Icon(Icons.logout, size: 18),
+            label: const Text('Cerrar Sesión'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ColoresApp.advertencia,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
           ),
         ],
       ),
-      drawer: _construirDrawer(context),
+    );
 
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Color(0xFF0F0F0F),
-              Color(0xFF0A0A0F),
-            ],
+    if (confirmar == true) {
+      await _cerrarSesionYRegresarLogin();
+    }
+
+    return false;
+  }
+
+  Future<void> _cerrarSesionYRegresarLogin() async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      await authService.cerrarSesion();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                SizedBox(width: 8),
+                Text('Sesión cerrada correctamente'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
           ),
+        );
+
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (mounted) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const PantallaLogin()),
+                (route) => false,
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const PantallaLogin()),
+              (route) => false,
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: _confirmarSalidaAdmin,
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        appBar: AppBar(
+          title: const Text('PANEL ADMINISTRADOR'),
+          leading: Builder(
+            builder: (context) => IconButton(
+              icon: const Icon(Icons.menu),
+              onPressed: () => Scaffold.of(context).openDrawer(),
+            ),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _cargarInfoSistema,
+            ),
+            IconButton(
+              icon: const Icon(Icons.admin_panel_settings),
+              onPressed: () => _mostrarInfoAdmin(context),
+            ),
+          ],
         ),
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header de administrador
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      ColoresApp.rojoAcento.withOpacity(0.8),
-                      ColoresApp.naranjaAcento.withOpacity(0.8),
+        drawer: _construirDrawer(context),
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Color(0xFF0F0F0F),
+                Color(0xFF0A0A0F),
+              ],
+            ),
+          ),
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header de administrador
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        ColoresApp.rojoAcento.withOpacity(0.8),
+                        ColoresApp.naranjaAcento.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: ColoresApp.rojoAcento.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
                     ],
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: ColoresApp.rojoAcento.withOpacity(0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.admin_panel_settings,
+                          size: 32,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'PANEL DE ADMINISTRACIÓN',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.0,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            AutoScrollingText(
+                              text: 'Control total del Sistema Naboo Customs',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 14,
+                              ),
+                              duration: const Duration(seconds: 4),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // GESTIÓN DE CONTENIDO
+                _seccionAdmin(
+                  'GESTIÓN DE CONTENIDO',
+                  Icons.inventory,
+                  ColoresApp.verdeAcento,
+                  [
+                    _tarjetaAdmin(
+                      'Gestionar Figuras',
+                      'Naves y Dioramas',
+                      Icons.category,
+                      ColoresApp.moradoPrimario,
+                          () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const PantallaGestionFiguras(),
+                          ),
+                        );
+                      },
+                    ),
+                    _tarjetaAdmin(
+                      'Gestionar Usuarios',
+                      'Crear y editar',
+                      Icons.people,
+                      ColoresApp.verdeAcento,
+                          () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const PantallaGestionUsuarios(),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.admin_panel_settings,
-                        size: 32,
-                        color: Colors.white,
-                      ),
+
+                const SizedBox(height: 20),
+
+                // CONFIGURACIÓN DE APLICACIÓN
+                _seccionAdmin(
+                  'CONFIGURACIÓN PUBLICIDAD',
+                  Icons.settings,
+                  ColoresApp.cyanPrimario,
+                  [
+                    _tarjetaAdmin(
+                      'Texto Marquee',
+                      'Editar mensaje',
+                      Icons.text_fields,
+                      ColoresApp.cyanPrimario,
+                          () {
+                        _mostrarDialogoTextoMarquee();
+                      },
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'PANEL DE ADMINISTRACIÓN',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 1.0,
-                            ),
+                    _tarjetaAdmin(
+                      'Publicidad Push',
+                      'Gestionar promociones',
+                      Icons.campaign,
+                      ColoresApp.naranjaAcento,
+                          () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const PantallaGestionPublicidad(),
                           ),
-                          const SizedBox(height: 4),
-                          AutoScrollingText(
-                            text: 'Control total del Sistema Naboo Customs',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
-                              fontSize: 14,
-                            ),
-                            duration: const Duration(seconds: 4),
-                          ),
-                        ],
-                      ),
+                        );
+                      },
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24),
 
-              // GESTIÓN DE CONTENIDO
-              _seccionAdmin(
-                'GESTIÓN DE CONTENIDO',
-                Icons.inventory,
-                ColoresApp.verdeAcento,
-                [
-                  _tarjetaAdmin(
-                    'Gestionar Figuras',
-                    'Naves y Dioramas',
-                    Icons.category,
-                    ColoresApp.moradoPrimario,
-                        () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const PantallaGestionFiguras(),
-                        ),
-                      );
-                    },
-                  ),
-                  _tarjetaAdmin(
-                    'Gestionar Usuarios',
-                    'Crear y editar',
-                    Icons.people,
-                    ColoresApp.verdeAcento,
-                        () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const PantallaGestionUsuarios(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                const SizedBox(height: 20),
 
-              const SizedBox(height: 20),
+                // ESTADÍSTICAS Y MONITOREO
+                _seccionAdmin(
+                  'ESTADÍSTICAS Y MONITOREO',
+                  Icons.analytics,
+                  ColoresApp.azulPrimario,
+                  [
+                    _tarjetaAdmin(
+                      'Estadísticas',
+                      'Ver uso de app',
+                      Icons.analytics,
+                      ColoresApp.azulPrimario,
+                          () {
+                        _mostrarEstadisticas();
+                      },
+                    ),
+                    _tarjetaAdmin(
+                      'Utilidades Admin',
+                      'Herramientas',
+                      Icons.build,
+                      ColoresApp.rojoAcento,
+                          () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const PantallaUtilidadesAdmin(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
 
-              // CONFIGURACIÓN DE APLICACIÓN
-              _seccionAdmin(
-                'CONFIGURACIÓN PUBLICIDAD',
-                Icons.settings,
-                ColoresApp.cyanPrimario,
-                [
-                  _tarjetaAdmin(
-                    'Texto Marquee',
-                    'Editar mensaje',
-                    Icons.text_fields,
-                    ColoresApp.cyanPrimario,
-                        () {
-                      _mostrarDialogoTextoMarquee();
-                    },
-                  ),
-                  _tarjetaAdmin(
-                    'Publicidad Push',
-                    'Gestionar promociones',
-                    Icons.campaign,
-                    ColoresApp.naranjaAcento,
-                        () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const PantallaGestionPublicidad(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                const SizedBox(height: 20),
 
-              const SizedBox(height: 20),
+                // ACCESO RÁPIDO
+                _seccionAdmin(
+                  'ACCESO RÁPIDO',
+                  Icons.flash_on,
+                  ColoresApp.rosaAcento,
+                  [
+                    _tarjetaAdmin(
+                      'Vista Usuario',
+                      'Ver como cliente',
+                      Icons.person,
+                      ColoresApp.informacion,
+                          () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (context) => const PantallaHome()),
+                        );
+                      },
+                    ),
+                    _tarjetaAdmin(
+                      'Logs del Sistema',
+                      'Ver registros',
+                      Icons.list_alt,
+                      ColoresApp.advertencia,
+                          () {
+                        _mostrarLogs();
+                      },
+                    ),
+                  ],
+                ),
 
-              // ESTADÍSTICAS Y MONITOREO
-              _seccionAdmin(
-                'ESTADÍSTICAS Y MONITOREO',
-                Icons.analytics,
-                ColoresApp.azulPrimario,
-                [
-                  _tarjetaAdmin(
-                    'Estadísticas',
-                    'Ver uso de app',
-                    Icons.analytics,
-                    ColoresApp.azulPrimario,
-                        () {
-                      _mostrarEstadisticas();
-                    },
-                  ),
-                  _tarjetaAdmin(
-                    'Utilidades Admin',
-                    'Herramientas',
-                    Icons.build,
-                    ColoresApp.rojoAcento,
-                        () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const PantallaUtilidadesAdmin(),
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
+                const SizedBox(height: 24),
 
-              const SizedBox(height: 20),
+                // INFORMACIÓN DEL SISTEMA
+                _construirInfoSistema(),
 
-              // ACCESO RÁPIDO
-              _seccionAdmin(
-                'ACCESO RÁPIDO',
-                Icons.flash_on,
-                ColoresApp.rosaAcento,
-                [
-                  _tarjetaAdmin(
-                    'Vista Usuario',
-                    'Ver como cliente',
-                    Icons.person,
-                    ColoresApp.informacion,
-                        () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (context) => const PantallaHome()),
-                      );
-                    },
-                  ),
-                  _tarjetaAdmin(
-                    'Logs del Sistema',
-                    'Ver registros',
-                    Icons.list_alt,
-                    ColoresApp.advertencia,
-                        () {
-                      _mostrarLogs();
-                    },
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 24),
-
-              // INFORMACIÓN DEL SISTEMA
-              _construirInfoSistema(),
-
-              const SizedBox(height: 100),
-            ],
+                const SizedBox(height: 100),
+              ],
+            ),
           ),
         ),
       ),
@@ -352,7 +458,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
       backgroundColor: const Color(0xFF1A1A1A),
       child: Column(
         children: [
-          // Header del drawer
           Container(
             height: 200,
             decoration: const BoxDecoration(
@@ -396,8 +501,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               ),
             ),
           ),
-
-          // Items del menú
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
@@ -475,8 +578,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
               ],
             ),
           ),
-
-          // Footer con cerrar sesión
           Container(
             padding: const EdgeInsets.all(16),
             child: _itemDrawer(
@@ -630,8 +731,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
           ),
         ),
         const SizedBox(height: 16),
-
-        // Grid de tarjetas
         for (int i = 0; i < tarjetas.length; i += 2)
           Padding(
             padding: const EdgeInsets.only(bottom: 12),
@@ -672,7 +771,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Fila superior con icono y flecha
             Row(
               children: [
                 Container(
@@ -695,14 +793,11 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                 ),
               ],
             ),
-
-            // Espacio para el texto con auto-scroll
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // Título con auto-scroll
                   Flexible(
                     child: AutoScrollingText(
                       text: titulo,
@@ -715,10 +810,7 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                       duration: const Duration(seconds: 3),
                     ),
                   ),
-
                   const SizedBox(height: 4),
-
-                  // Descripción con auto-scroll
                   Flexible(
                     child: AutoScrollingText(
                       text: descripcion,
@@ -765,9 +857,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
       ),
     );
   }
-
-  // Los demás métodos (_mostrarDialogoTextoMarquee, _mostrarEstadisticas, etc.) siguen igual
-  // [Métodos restantes igual que antes...]
 
   void _mostrarDialogoTextoMarquee() async {
     final TextEditingController controller = TextEditingController();
@@ -831,7 +920,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   ),
                 ),
                 const SizedBox(height: 20),
-
                 Container(
                   decoration: BoxDecoration(
                     color: ColoresApp.superficieOscura,
@@ -863,8 +951,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                   ),
                 ),
                 const SizedBox(height: 16),
-
-                // Preview
                 Container(
                   width: double.infinity,
                   height: 40,
@@ -880,7 +966,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
                         final texto = value.text.isEmpty
                             ? 'Vista previa del texto...'
                             : value.text;
-
                         return Container(
                           width: double.infinity,
                           child: SingleChildScrollView(
@@ -955,7 +1040,6 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     }
 
     try {
-      // Mostrar indicador de carga
       showDialog(
         context: dialogContext,
         barrierDismissible: false,
@@ -981,25 +1065,19 @@ class _PantallaAdminState extends State<PantallaAdmin> {
         ),
       );
 
-      // Obtener configuración actual
       final configActual = await _firebaseService.obtenerConfiguracion().first;
 
-      // Crear nueva configuración con el texto actualizado
       final nuevaConfig = configActual.copiarCon(
         textoMarquee: nuevoTexto.trim(),
       );
 
-      // Guardar en Firebase
       final exito = await _firebaseService.actualizarConfiguracion(nuevaConfig);
 
-      // Cerrar indicador de carga
       if (mounted) Navigator.of(context).pop();
 
       if (exito) {
-        // Cerrar diálogo principal
         if (mounted) Navigator.of(dialogContext).pop();
 
-        // Mostrar mensaje de éxito
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -1030,12 +1108,10 @@ class _PantallaAdminState extends State<PantallaAdmin> {
     } catch (e) {
       print('❌ Admin: ERROR guardando texto marquee: $e');
 
-      // Cerrar indicador de carga si está abierto
       if (mounted && Navigator.of(context).canPop()) {
         Navigator.of(context).pop();
       }
 
-      // Mostrar error
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

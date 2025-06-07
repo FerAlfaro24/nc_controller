@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:marquee/marquee.dart'; // ← Importar el paquete
 
 class CompleteTextMarquee extends StatefulWidget {
   final String text;
@@ -12,7 +13,7 @@ class CompleteTextMarquee extends StatefulWidget {
     super.key,
     required this.text,
     required this.style,
-    this.duration = const Duration(seconds: 8),
+    this.duration = const Duration(seconds: 10),
     this.height = 40,
     this.backgroundColor = Colors.black,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -22,198 +23,96 @@ class CompleteTextMarquee extends StatefulWidget {
   State<CompleteTextMarquee> createState() => _CompleteTextMarqueeState();
 }
 
-class _CompleteTextMarqueeState extends State<CompleteTextMarquee>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-  double _textWidth = 0;
-  double _containerWidth = 0;
-  bool _needsAnimation = false;
-  bool _isReady = false;
-
-  @override
-  void initState() {
-    super.initState();
-    print('🎬 CompleteMarquee: Inicializando...');
-
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
-
-    _animation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.linear,
-    ));
-
-    _controller.addStatusListener((status) {
-      if (status == AnimationStatus.completed && _needsAnimation) {
-        print('🔄 CompleteMarquee: Ciclo completado, reiniciando...');
-        _controller.reset();
-        _controller.forward();
-      }
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _measureAndStart();
-    });
-  }
-
-  @override
-  void didUpdateWidget(CompleteTextMarquee oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.text != widget.text || oldWidget.style != widget.style) {
-      print('📝 CompleteMarquee: Texto cambió, remidiendo...');
-      _controller.stop();
-      _controller.reset();
-      setState(() {
-        _isReady = false;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _measureAndStart();
-      });
-    }
-  }
-
-  void _measureAndStart() {
-    if (!mounted) return;
-
-    // Medir el ancho del texto
-    final textPainter = TextPainter(
-      text: TextSpan(text: widget.text, style: widget.style),
-      maxLines: 1,
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    _textWidth = textPainter.size.width;
-
-    // Obtener el ancho del contenedor
-    final renderBox = context.findRenderObject() as RenderBox?;
-    if (renderBox == null) return;
-
-    _containerWidth = renderBox.size.width - widget.padding.horizontal;
-
-    print('📏 CompleteMarquee: Texto "${widget.text}"');
-    print('📏 CompleteMarquee: Ancho texto: $_textWidth px');
-    print('📏 CompleteMarquee: Ancho contenedor: $_containerWidth px');
-
-    final needsAnimation = _textWidth > _containerWidth;
-    print('🔍 CompleteMarquee: ¿Necesita animación? $needsAnimation');
-
-    setState(() {
-      _needsAnimation = needsAnimation;
-      _isReady = true;
-    });
-
-    if (_needsAnimation) {
-      print('🚀 CompleteMarquee: Iniciando animación...');
-      Future.delayed(const Duration(milliseconds: 800), () {
-        if (mounted && _needsAnimation) {
-          _controller.forward();
-        }
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
+class _CompleteTextMarqueeState extends State<CompleteTextMarquee> {
   @override
   Widget build(BuildContext context) {
     return Container(
       height: widget.height,
+      width: double.infinity, // ← IMPORTANTE: Ancho definido
       decoration: BoxDecoration(
         color: widget.backgroundColor,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Padding(
         padding: widget.padding,
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            // Si las dimensiones cambiaron, remedir
-            final newContainerWidth = constraints.maxWidth;
-            if (newContainerWidth != _containerWidth && _isReady) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                _measureAndStart();
-              });
-            }
+        child: _construirMarquee(),
+      ),
+    );
+  }
 
-            if (!_isReady) {
-              return Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  widget.text,
-                  style: widget.style.copyWith(
-                    color: widget.style.color?.withOpacity(0.7),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }
+  Widget _construirMarquee() {
+    // ✅ FORZAR MARQUEE SIEMPRE (como en tu Android)
+    return SizedBox(
+      width: double.infinity, // ← CLAVE: Ancho definido
+      height: widget.height - widget.padding.vertical,
+      child: Marquee(
+        text: widget.text,
+        style: widget.style,
+        scrollAxis: Axis.horizontal,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        blankSpace: 80.0,                    // Más espacio entre repeticiones
+        velocity: 60.0,                      // Velocidad más visible
+        pauseAfterRound: Duration.zero,      // Sin pausas (como TV)
+        startPadding: 0.0,
+        accelerationDuration: Duration.zero, // Sin aceleración
+        decelerationDuration: Duration.zero, // Sin desaceleración
+        accelerationCurve: Curves.linear,
+        decelerationCurve: Curves.linear,
+        textDirection: TextDirection.ltr,
+      ),
+    );
+  }
+}
 
-            // Si no necesita animación, mostrar texto normal
-            if (!_needsAnimation) {
-              return Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  widget.text,
-                  style: widget.style,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            }
+// ✅ VERSIÓN SÚPER SIMPLE QUE FUNCIONA SEGURO
+class SimpleMarquee extends StatelessWidget {
+  final String text;
+  final TextStyle style;
+  final double height;
+  final Color backgroundColor;
+  final EdgeInsetsGeometry padding;
 
-            // ANIMACIÓN QUE MUESTRA TODO EL TEXTO
-            return ClipRect(
-              child: SizedBox(
-                width: double.infinity,
-                height: double.infinity,
-                child: AnimatedBuilder(
-                  animation: _animation,
-                  builder: (context, child) {
-                    // Calcular posición para que TODO el texto sea visible
-                    // Empieza desde la derecha del contenedor
-                    final startX = _containerWidth;
-                    // Termina cuando el final del texto sale por la izquierda
-                    final endX = -_textWidth;
-                    final totalDistance = startX - endX;
+  const SimpleMarquee({
+    super.key,
+    required this.text,
+    required this.style,
+    this.height = 40,
+    this.backgroundColor = Colors.black,
+    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+  });
 
-                    final currentX = startX - (_animation.value * totalDistance);
-
-                    return Transform.translate(
-                      offset: Offset(currentX, 0),
-                      child: Container(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          widget.text,
-                          style: widget.style,
-                          maxLines: 1,
-                          softWrap: false,
-                          overflow: TextOverflow.visible, // ¡CLAVE!
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            );
-          },
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: height,
+      width: double.infinity, // ← CRÍTICO
+      decoration: BoxDecoration(
+        color: backgroundColor,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: padding,
+        child: Marquee(
+          text: text,
+          style: style,
+          scrollAxis: Axis.horizontal,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          blankSpace: 100.0,                  // Espaciado grande
+          velocity: 80.0,                     // Velocidad bien visible
+          pauseAfterRound: Duration.zero,     // ← SIN PAUSAS
+          startPadding: 0.0,
+          accelerationDuration: Duration.zero,
+          decelerationDuration: Duration.zero,
+          textDirection: TextDirection.ltr,
         ),
       ),
     );
   }
 }
 
-// Versión alternativa con doble texto para continuidad
-class ContinuousMarquee extends StatefulWidget {
+
+// ✅ VERSIÓN ALTERNATIVA ULTRA SIMPLE Y CONFIABLE
+class TVNewsMarquee extends StatefulWidget {
   final String text;
   final TextStyle style;
   final Duration duration;
@@ -221,7 +120,7 @@ class ContinuousMarquee extends StatefulWidget {
   final Color backgroundColor;
   final EdgeInsetsGeometry padding;
 
-  const ContinuousMarquee({
+  const TVNewsMarquee({
     super.key,
     required this.text,
     required this.style,
@@ -232,13 +131,12 @@ class ContinuousMarquee extends StatefulWidget {
   });
 
   @override
-  State<ContinuousMarquee> createState() => _ContinuousMarqueeState();
+  State<TVNewsMarquee> createState() => _TVNewsMarqueeState();
 }
 
-class _ContinuousMarqueeState extends State<ContinuousMarquee>
+class _TVNewsMarqueeState extends State<TVNewsMarquee>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _animation;
 
   @override
   void initState() {
@@ -249,24 +147,16 @@ class _ContinuousMarqueeState extends State<ContinuousMarquee>
       vsync: this,
     );
 
-    _animation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.linear,
-    ));
-
-    // Repetir indefinidamente
+    // Repetir para siempre
     _controller.repeat();
 
-    print('✅ ContinuousMarquee: Animación iniciada');
+    print('✅ TV News Marquee: Animación iniciada');
   }
 
   @override
-  void didUpdateWidget(ContinuousMarquee oldWidget) {
+  void didUpdateWidget(TVNewsMarquee oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.text != widget.text) {
+    if (oldWidget.text != widget.text || oldWidget.duration != widget.duration) {
       _controller.reset();
       _controller.repeat();
     }
@@ -289,39 +179,34 @@ class _ContinuousMarqueeState extends State<ContinuousMarquee>
       child: Padding(
         padding: widget.padding,
         child: ClipRect(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return AnimatedBuilder(
-                animation: _animation,
-                builder: (context, child) {
-                  // Crear texto duplicado con espaciado
-                  final String doubleText = '${widget.text}     •     ${widget.text}     •     ';
+          child: AnimatedBuilder(
+            animation: _controller,
+            builder: (context, child) {
+              // Crear texto con espaciado y repetición para efecto continuo
+              final separator = '  •  '; // Separador visual
+              final repeatedText = '${widget.text}$separator${widget.text}$separator${widget.text}$separator';
 
-                  // Medir el texto individual
-                  final textPainter = TextPainter(
-                    text: TextSpan(text: widget.text, style: widget.style),
-                    maxLines: 1,
-                    textDirection: TextDirection.ltr,
-                  );
-                  textPainter.layout();
-                  final textWidth = textPainter.size.width;
+              // Medir una unidad del texto (texto + separador)
+              final textPainter = TextPainter(
+                text: TextSpan(text: '${widget.text}$separator', style: widget.style),
+                maxLines: 1,
+                textDirection: TextDirection.ltr,
+              );
+              textPainter.layout();
+              final unitWidth = textPainter.size.width;
 
-                  // Calcular desplazamiento
-                  final containerWidth = constraints.maxWidth;
-                  final cycleDistance = textWidth + 50; // texto + espaciado
-                  final offset = (_animation.value * cycleDistance) % cycleDistance;
+              // Calcular desplazamiento cíclico
+              final containerWidth = MediaQuery.of(context).size.width;
+              final offset = (_controller.value * unitWidth) % unitWidth;
 
-                  return Transform.translate(
-                    offset: Offset(containerWidth - offset, 0),
-                    child: Text(
-                      doubleText,
-                      style: widget.style,
-                      maxLines: 1,
-                      softWrap: false,
-                      overflow: TextOverflow.visible,
-                    ),
-                  );
-                },
+              return Transform.translate(
+                offset: Offset(containerWidth - offset, 0),
+                child: Text(
+                  repeatedText,
+                  style: widget.style,
+                  maxLines: 1,
+                  softWrap: false,
+                ),
               );
             },
           ),
@@ -331,8 +216,8 @@ class _ContinuousMarqueeState extends State<ContinuousMarquee>
   }
 }
 
-// Versión súper simple que GARANTIZA mostrar todo el texto
-class FullTextMarquee extends StatefulWidget {
+// ✅ VERSIÓN SÚPER SIMPLE GARANTIZADA
+class InfiniteMarquee extends StatefulWidget {
   final String text;
   final TextStyle style;
   final Duration duration;
@@ -340,38 +225,36 @@ class FullTextMarquee extends StatefulWidget {
   final Color backgroundColor;
   final EdgeInsetsGeometry padding;
 
-  const FullTextMarquee({
+  const InfiniteMarquee({
     super.key,
     required this.text,
     required this.style,
-    this.duration = const Duration(seconds: 8),
+    this.duration = const Duration(seconds: 12),
     this.height = 40,
     this.backgroundColor = Colors.black,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
   });
 
   @override
-  State<FullTextMarquee> createState() => _FullTextMarqueeState();
+  State<InfiniteMarquee> createState() => _InfiniteMarqueeState();
 }
 
-class _FullTextMarqueeState extends State<FullTextMarquee>
+class _InfiniteMarqueeState extends State<InfiniteMarquee>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
 
   @override
   void initState() {
     super.initState();
-
     _controller = AnimationController(
       duration: widget.duration,
       vsync: this,
     );
-
     _controller.repeat();
   }
 
   @override
-  void didUpdateWidget(FullTextMarquee oldWidget) {
+  void didUpdateWidget(InfiniteMarquee oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.text != widget.text) {
       _controller.reset();
@@ -399,19 +282,17 @@ class _FullTextMarqueeState extends State<FullTextMarquee>
           child: AnimatedBuilder(
             animation: _controller,
             builder: (context, child) {
-              return SlideTransition(
-                position: Tween<Offset>(
-                  begin: const Offset(1.2, 0.0), // Empieza más a la derecha
-                  end: const Offset(-1.2, 0.0),   // Termina más a la izquierda
-                ).animate(_controller),
-                child: Container(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    widget.text,
-                    style: widget.style,
-                    maxLines: 1,
-                    softWrap: false,
-                  ),
+              return FractionalTranslation(
+                translation: Offset(2.0 - _controller.value * 4.0, 0.0),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(widget.text, style: widget.style, maxLines: 1, softWrap: false),
+                    const SizedBox(width: 100),
+                    Text(widget.text, style: widget.style, maxLines: 1, softWrap: false),
+                    const SizedBox(width: 100),
+                    Text(widget.text, style: widget.style, maxLines: 1, softWrap: false),
+                  ],
                 ),
               );
             },
