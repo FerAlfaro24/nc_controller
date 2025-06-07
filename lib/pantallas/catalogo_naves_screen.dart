@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../nucleo/constantes/colores_app.dart';
 import '../servicios/firebase_service.dart';
 import '../modelos/figura.dart';
+import 'control_figura_screen.dart';
 
 class PantallaCatalogoNaves extends StatefulWidget {
   const PantallaCatalogoNaves({super.key});
