@@ -10,7 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  marquee: ^2.2.3  # ← Agregar esta línea
+  marquee: ^2.2.3
 
   # Firebase - VERSIONES ESTABLES Y COMPATIBLES
   firebase_core: ^2.32.0
@@ -36,6 +36,13 @@ dependencies:
   cloudinary_public: ^0.23.1
   http: ^1.4.0
   dio: ^5.4.0
+
+  # BLUETOOTH DEPENDENCIES
+  flutter_bluetooth_serial: ^0.4.0
+  permission_handler: ^11.3.1
+
+  # AUDIO PLAYER PARA MUSICA
+  just_audio: ^0.9.40
 
   # Iconos
   cupertino_icons: ^1.0.8
