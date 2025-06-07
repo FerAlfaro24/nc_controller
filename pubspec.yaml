@@ -39,10 +39,6 @@ dependencies:
   flutter_bluetooth_serial: ^0.4.0
   permission_handler: ^11.3.1
 
-  # Servicios del sistema
-  flutter/services:
-    sdk: flutter
-
   # UI y utilidades
   google_fonts: ^6.2.1
   url_launcher: ^6.3.1
