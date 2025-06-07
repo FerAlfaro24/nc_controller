@@ -1,51 +1,57 @@
 name: nc_controller
-description: "Aplicación Controladora Naboo Customs"
+description: "Aplicación de control para figuras customizadas con Arduino y Bluetooth de Naboo Customs"
 publish_to: 'none'
 
 version: 1.0.0+1
 
 environment:
-  sdk: ^3.0.0
+  sdk: ^3.6.0
+  flutter: ">=3.24.0"
 
 dependencies:
   flutter:
     sdk: flutter
-  marquee: ^2.2.3
 
-  # Firebase - VERSIONES ESTABLES Y COMPATIBLES
-  firebase_core: ^2.32.0
-  firebase_auth: ^4.16.0
-  cloud_firestore: ^4.17.5
-  firebase_storage: ^11.6.5
+  # Iconos de Cupertino
+  cupertino_icons: ^1.0.8
 
-  # Manejo de estado - VERSION FIJA PARA EVITAR PROBLEMAS
-  provider: ^6.1.5
+  # Firebase
+  firebase_core: ^3.8.0
+  firebase_auth: ^5.3.3
+  cloud_firestore: ^5.5.0
+  firebase_storage: ^12.4.0
 
-  # UI y animaciones
-  google_fonts: ^6.2.1
-  lottie: ^2.7.0
-  shimmer: ^3.0.0
+  # Gestión de estado
+  provider: ^6.1.2
 
-  # Integraciones externas
-  url_launcher: ^6.3.1
-  webview_flutter: ^4.13.0
-  image_picker: ^1.1.2
+  # Networking y caché de imágenes
   cached_network_image: ^3.4.1
+  http: ^1.2.2
 
-  # NUEVAS DEPENDENCIAS PARA CLOUDINARY
+  # Servicios de imágenes
   cloudinary_public: ^0.23.1
-  http: ^1.4.0
-  dio: ^5.4.0
+  image_picker: ^1.1.2
 
-  # BLUETOOTH DEPENDENCIES
+  # Audio
+  just_audio: ^0.9.42
+
+  # Bluetooth - CORREGIDO
   flutter_bluetooth_serial: ^0.4.0
   permission_handler: ^11.3.1
 
-  # AUDIO PLAYER PARA MUSICA
-  just_audio: ^0.9.40
+  # Servicios del sistema
+  flutter/services:
+    sdk: flutter
 
-  # Iconos
-  cupertino_icons: ^1.0.8
+  # UI y utilidades
+  google_fonts: ^6.2.1
+  url_launcher: ^6.3.1
+
+  # Marquee y texto scrolleable
+  marquee: ^2.2.3
+
+  # WebView para Instagram
+  webview_flutter: ^4.10.0
 
 dev_dependencies:
   flutter_test:
@@ -55,20 +61,15 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # Recursos de la app
   assets:
     - assets/imagenes/
-    - assets/iconos/
-    - assets/animaciones/
+    - assets/audio/
+    - assets/icons/
 
-# IMPORTANTE: Configuración adicional para evitar errores de nested
-dependency_overrides:
-  # Forzar versión específica de nested para evitar conflictos
-  nested: ^1.0.0
-
-  # Permisos (para Bluetooth)
-  permission_handler: ^11.3.1
-
-  # Iconos
-  cupertino_icons: ^1.0.8
-
-  webview_flutter: ^4.4.2
+  fonts:
+    - family: Orbitron
+      fonts:
+        - asset: fonts/Orbitron-Regular.ttf
+        - asset: fonts/Orbitron-Bold.ttf
+          weight: 700
