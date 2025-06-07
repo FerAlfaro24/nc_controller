@@ -18,7 +18,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
   bool _cargando = false;
   bool _mostrarPassword = false;
 
-  // CREAR INSTANCIA DIRECTA SIN PROVIDER
   final AuthService _authService = AuthService();
 
   @override
@@ -34,8 +33,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
     setState(() => _cargando = true);
 
     try {
-      print('🔐 Intentando login con: ${_usuarioController.text} / ${_passwordController.text}');
-
       ResultadoAuth resultado = await _authService.iniciarSesion(
         _usuarioController.text,
         _passwordController.text,
@@ -47,7 +44,9 @@ class _PantallaLoginState extends State<PantallaLogin> {
         if (resultado.exitoso && resultado.usuario != null) {
           print('✅ Login exitoso para: ${resultado.usuario!.nombre}');
 
-          ScaffoldMessenger.of(context).showSnackBar(
+          // --- INICIO DE LA CORRECCIÓN ---
+          // Mostramos el SnackBar y guardamos su controlador para saber cuándo termina.
+          final snackBarController = ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('¡Bienvenido, ${resultado.usuario!.nombre}!'),
               backgroundColor: ColoresApp.exito,
@@ -55,10 +54,11 @@ class _PantallaLoginState extends State<PantallaLogin> {
             ),
           );
 
-          // Pequeña pausa para mostrar el mensaje
-          await Future.delayed(const Duration(milliseconds: 500));
+          // Esperamos a que el SnackBar se haya cerrado completamente.
+          await snackBarController.closed;
+          // --- FIN DE LA CORRECCIÓN ---
 
-          // Navegar según el rol del usuario
+          // Ahora que el mensaje desapareció, navegamos.
           if (mounted) {
             if (resultado.usuario!.esAdmin) {
               print('🔄 Navegando a pantalla admin');
@@ -136,7 +136,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Logo o título
                           Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
@@ -150,7 +149,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ),
                           ),
                           const SizedBox(height: 32),
-
                           Text(
                             'NABOO CUSTOMS',
                             style: Theme.of(context).textTheme.displayMedium?.copyWith(
@@ -159,7 +157,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ),
                           ),
                           const SizedBox(height: 8),
-
                           Text(
                             'Centro de Control',
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -167,8 +164,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ),
                           ),
                           const SizedBox(height: 40),
-
-                          // Campo Usuario
                           Container(
                             decoration: BoxDecoration(
                               color: ColoresApp.tarjetaOscura,
@@ -197,8 +192,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ),
                           ),
                           const SizedBox(height: 16),
-
-                          // Campo Contraseña
                           Container(
                             decoration: BoxDecoration(
                               color: ColoresApp.tarjetaOscura,
@@ -234,8 +227,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ),
                           ),
                           const SizedBox(height: 24),
-
-                          // Botones de acceso rápido
                           Row(
                             children: [
                               Expanded(
@@ -261,8 +252,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ],
                           ),
                           const SizedBox(height: 16),
-
-                          // Botón de login
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton(
@@ -295,8 +284,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ),
                           ),
                           const SizedBox(height: 32),
-
-                          // Debug info
                           if (_cargando)
                             const Padding(
                               padding: EdgeInsets.all(8.0),
@@ -308,8 +295,6 @@ class _PantallaLoginState extends State<PantallaLogin> {
                                 ),
                               ),
                             ),
-
-                          // Información de credenciales
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
@@ -319,7 +304,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ),
                             child: Column(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.info_outline,
                                   color: ColoresApp.informacion,
                                   size: 24,
@@ -334,7 +319,7 @@ class _PantallaLoginState extends State<PantallaLogin> {
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                Text(
+                                const Text(
                                   'Administrador: admin / 1234\nUsuario: usuario / 1234',
                                   style: TextStyle(
                                     color: ColoresApp.textoSecundario,

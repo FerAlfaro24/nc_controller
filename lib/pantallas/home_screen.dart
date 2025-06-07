@@ -355,7 +355,7 @@ class _PantallaHomeState extends State<PantallaHome> {
                             'SÍGUENOS EN INSTAGRAM',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
