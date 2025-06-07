@@ -142,6 +142,8 @@ class _PantallaHomeState extends State<PantallaHome> {
         resizeToAvoidBottomInset: true,
         appBar: AppBar(
           title: const Text('NABOO CUSTOMS'),
+          backgroundColor: Colors.black.withOpacity(0.8),
+          elevation: 0,
           leading: Builder(
             builder: (context) => IconButton(
               icon: const Icon(Icons.menu),
@@ -159,13 +161,9 @@ class _PantallaHomeState extends State<PantallaHome> {
         drawer: _construirDrawer(context),
         body: Container(
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF0F0F0F),
-                Color(0xFF0A0A0F),
-              ],
+            image: DecorationImage(
+              image: AssetImage('assets/imagenes/fondovacio.png'),
+              fit: BoxFit.cover,
             ),
           ),
           child: SingleChildScrollView(
@@ -196,8 +194,15 @@ class _PantallaHomeState extends State<PantallaHome> {
                     return Container(
                       key: ValueKey(textoMarquee),
                       decoration: BoxDecoration(
-                        border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.3)),
+                        border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.5)),
                         borderRadius: BorderRadius.circular(8),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       child: CompleteTextMarquee(
                         text: textoMarquee,
@@ -206,31 +211,71 @@ class _PantallaHomeState extends State<PantallaHome> {
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           letterSpacing: 0.5,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              offset: Offset(0, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
                         ),
                         duration: const Duration(seconds: 10),
                         height: 40,
-                        backgroundColor: Colors.black.withOpacity(0.5),
+                        backgroundColor: Colors.black.withOpacity(0.7),
                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       ),
                     );
                   },
                 ),
                 const SizedBox(height: 32),
-                const Text(
-                  'CENTRO DE CONTROL',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.2,
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Controla tus figuras futuristas',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 16,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CENTRO DE CONTROL',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 1.2,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.7),
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Controla tus figuras futuristas',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.5),
+                              offset: const Offset(0, 1),
+                              blurRadius: 2,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 32),
@@ -259,9 +304,16 @@ class _PantallaHomeState extends State<PantallaHome> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: ColoresApp.tarjetaOscura,
+                    color: ColoresApp.tarjetaOscura.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: ColoresApp.bordeGris),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,12 +326,19 @@ class _PantallaHomeState extends State<PantallaHome> {
                             size: 24,
                           ),
                           const SizedBox(width: 12),
-                          const Text(
+                          Text(
                             'ENLACES RÁPIDOS',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.5),
+                                  offset: const Offset(0, 1),
+                                  blurRadius: 2,
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -323,9 +382,16 @@ class _PantallaHomeState extends State<PantallaHome> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: ColoresApp.tarjetaOscura,
+                    color: ColoresApp.tarjetaOscura.withOpacity(0.9),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: ColoresApp.bordeGris),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, 5),
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,6 +409,13 @@ class _PantallaHomeState extends State<PantallaHome> {
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(8),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
                             child: const Icon(
                               Icons.camera_alt,
@@ -351,12 +424,19 @@ class _PantallaHomeState extends State<PantallaHome> {
                             ),
                           ),
                           const SizedBox(width: 12),
-                          const Text(
+                          Text(
                             'SÍGUENOS EN INSTAGRAM',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 14,
                               fontWeight: FontWeight.w600,
+                              shadows: [
+                                Shadow(
+                                  color: Colors.black.withOpacity(0.5),
+                                  offset: const Offset(0, 1),
+                                  blurRadius: 2,
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -675,14 +755,19 @@ class _PantallaHomeState extends State<PantallaHome> {
       child: Container(
         height: 140,
         decoration: BoxDecoration(
-          color: ColoresApp.tarjetaOscura,
+          color: ColoresApp.tarjetaOscura.withOpacity(0.9),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withOpacity(0.5)),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.15),
-              blurRadius: 10,
+              color: color.withOpacity(0.3),
+              blurRadius: 15,
               offset: const Offset(0, 5),
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
@@ -692,20 +777,34 @@ class _PantallaHomeState extends State<PantallaHome> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withOpacity(0.2),
                 shape: BoxShape.circle,
-                border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+                border: Border.all(color: color.withOpacity(0.5), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
               ),
               child: Icon(icono, size: 36, color: color),
             ),
             const SizedBox(height: 12),
             Text(
               titulo,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
                 letterSpacing: 0.5,
+                shadows: [
+                  Shadow(
+                    color: Colors.black.withOpacity(0.5),
+                    offset: const Offset(0, 1),
+                    blurRadius: 2,
+                  ),
+                ],
               ),
               textAlign: TextAlign.center,
             ),
@@ -725,7 +824,8 @@ class _PantallaHomeState extends State<PantallaHome> {
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 3,
+        elevation: 5,
+        shadowColor: color.withOpacity(0.5),
       ),
     );
   }

@@ -114,7 +114,10 @@ class _PantallaLoginState extends State<PantallaLogin> {
       resizeToAvoidBottomInset: true,
       body: Container(
         decoration: const BoxDecoration(
-          gradient: ColoresApp.gradienteFondo,
+          image: DecorationImage(
+            image: AssetImage('assets/imagenes/fondomenu.png'),
+            fit: BoxFit.cover,
+          ),
         ),
         child: SafeArea(
           child: LayoutBuilder(
@@ -141,6 +144,13 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               gradient: ColoresApp.gradientePrimario,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: const Icon(
                               Icons.rocket_launch,
@@ -149,26 +159,58 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ),
                           ),
                           const SizedBox(height: 32),
-                          Text(
-                            'NABOO CUSTOMS',
-                            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                              color: ColoresApp.textoPrimario,
-                              fontWeight: FontWeight.bold,
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Centro de Control',
-                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              color: ColoresApp.textoSecundario,
+                            child: Column(
+                              children: [
+                                Text(
+                                  'NABOO CUSTOMS',
+                                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.5),
+                                        offset: const Offset(0, 2),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Centro de Control',
+                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                    color: Colors.white70,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.5),
+                                        offset: const Offset(0, 1),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 40),
                           Container(
                             decoration: BoxDecoration(
-                              color: ColoresApp.tarjetaOscura,
+                              color: ColoresApp.tarjetaOscura.withOpacity(0.9),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: ColoresApp.bordeGris),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: TextFormField(
                               controller: _usuarioController,
@@ -194,9 +236,16 @@ class _PantallaLoginState extends State<PantallaLogin> {
                           const SizedBox(height: 16),
                           Container(
                             decoration: BoxDecoration(
-                              color: ColoresApp.tarjetaOscura,
+                              color: ColoresApp.tarjetaOscura.withOpacity(0.9),
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: ColoresApp.bordeGris),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
                             child: TextFormField(
                               controller: _passwordController,
@@ -227,70 +276,93 @@ class _PantallaLoginState extends State<PantallaLogin> {
                             ),
                           ),
                           const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextButton.icon(
-                                  onPressed: _autocompletarAdmin,
-                                  icon: const Icon(Icons.admin_panel_settings, color: ColoresApp.rojoAcento, size: 20),
-                                  label: const Text(
-                                    'Admin',
-                                    style: TextStyle(color: ColoresApp.rojoAcento, fontSize: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: TextButton.icon(
+                                    onPressed: _autocompletarAdmin,
+                                    icon: const Icon(Icons.admin_panel_settings, color: ColoresApp.rojoAcento, size: 20),
+                                    label: const Text(
+                                      'Admin',
+                                      style: TextStyle(color: ColoresApp.rojoAcento, fontSize: 12),
+                                    ),
                                   ),
                                 ),
-                              ),
-                              Expanded(
-                                child: TextButton.icon(
-                                  onPressed: _autocompletarUsuario,
-                                  icon: const Icon(Icons.person, color: ColoresApp.cyanPrimario, size: 20),
-                                  label: const Text(
-                                    'Usuario',
-                                    style: TextStyle(color: ColoresApp.cyanPrimario, fontSize: 12),
+                                Expanded(
+                                  child: TextButton.icon(
+                                    onPressed: _autocompletarUsuario,
+                                    icon: const Icon(Icons.person, color: ColoresApp.cyanPrimario, size: 20),
+                                    label: const Text(
+                                      'Usuario',
+                                      style: TextStyle(color: ColoresApp.cyanPrimario, fontSize: 12),
+                                    ),
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 16),
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: _cargando ? null : _iniciarSesion,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: ColoresApp.azulPrimario,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(vertical: 16),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                          Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: ColoresApp.azulPrimario.withOpacity(0.3),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 4),
                                 ),
-                              ),
-                              child: _cargando
-                                  ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ],
+                            ),
+                            child: SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton(
+                                onPressed: _cargando ? null : _iniciarSesion,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: ColoresApp.azulPrimario,
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
                                 ),
-                              )
-                                  : const Text(
-                                'INICIAR SESIÓN',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 0.5,
+                                child: _cargando
+                                    ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                                    : const Text(
+                                  'INICIAR SESIÓN',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                           const SizedBox(height: 32),
                           if (_cargando)
-                            const Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text(
+                            Container(
+                              padding: const EdgeInsets.all(8.0),
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Text(
                                 'Autenticando...',
                                 style: TextStyle(
-                                  color: ColoresApp.textoSecundario,
+                                  color: Colors.white,
                                   fontSize: 12,
                                 ),
                               ),
@@ -298,9 +370,16 @@ class _PantallaLoginState extends State<PantallaLogin> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: ColoresApp.informacion.withOpacity(0.1),
+                              color: ColoresApp.informacion.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: ColoresApp.informacion.withOpacity(0.3)),
+                              border: Border.all(color: ColoresApp.informacion.withOpacity(0.5)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.2),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 3),
+                                ),
+                              ],
                             ),
                             child: Column(
                               children: [
@@ -316,14 +395,28 @@ class _PantallaLoginState extends State<PantallaLogin> {
                                     color: ColoresApp.informacion,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 14,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        offset: const Offset(0, 1),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 const SizedBox(height: 8),
-                                const Text(
+                                Text(
                                   'Administrador: admin / 1234\nUsuario: usuario / 1234',
                                   style: TextStyle(
-                                    color: ColoresApp.textoSecundario,
+                                    color: Colors.white,
                                     fontSize: 12,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.5),
+                                        offset: const Offset(0, 1),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
                                   ),
                                   textAlign: TextAlign.center,
                                 ),
