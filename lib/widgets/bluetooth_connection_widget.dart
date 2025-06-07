@@ -556,9 +556,9 @@ class _BluetoothConnectionWidgetState extends State<BluetoothConnectionWidget>
   // ✅ CORREGIDO: Iconos de señal que SÍ existen
   IconData _getSignalIcon(int rssi) {
     if (rssi > -50) return Icons.signal_cellular_4_bar;
-    if (rssi > -70) return Icons.signal_wifi_4_bar; // Cambiado a wifi
-    if (rssi > -80) return Icons.signal_wifi_3_bar; // Cambiado a wifi
-    return Icons.signal_wifi_1_bar; // Cambiado a wifi
+    if (rssi > -70) return Icons.signal_cellular_0_bar; // ✅ Cambiado a cellular
+    if (rssi > -80) return Icons.signal_cellular_0_bar; // ✅ Cambiado a cellular
+    return Icons.signal_cellular_0_bar; // ✅ Cambiado a cellular
   }
 
   Color _getSignalColor(int rssi) {
