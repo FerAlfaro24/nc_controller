@@ -4,7 +4,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../nucleo/constantes/colores_app.dart';
 import '../servicios/firebase_service.dart';
 import '../modelos/figura.dart';
-import '../widgets/auto_scrolling_text.dart';
 
 class PantallaCatalogoDioramas extends StatefulWidget {
   const PantallaCatalogoDioramas({super.key});
@@ -45,7 +44,7 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
           child: Column(
             children: [
               _construirHeader(),
-              _construirBarraBusqueda(),
+              _construirBarraBusquedaMejorada(),
               Expanded(
                 child: _construirCatalogoDioramas(),
               ),
@@ -58,23 +57,25 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
 
   Widget _construirHeader() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
       child: Row(
         children: [
-          // Botón de regresar con efecto futurista
+          // Botón de regresar mejorado
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  ColoresApp.moradoPrimario.withOpacity(0.3),
-                  ColoresApp.azulPrimario.withOpacity(0.1),
-                ],
-              ),
+              color: ColoresApp.superficieOscura.withOpacity(0.8),
               border: Border.all(
                 color: ColoresApp.moradoPrimario.withOpacity(0.5),
-                width: 1,
+                width: 1.5,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: ColoresApp.moradoPrimario.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: IconButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -85,82 +86,45 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 20),
 
-          // Título con animación
+          // Título principal mejorado y más llamativo
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: ColoresApp.moradoPrimario.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: ColoresApp.moradoPrimario.withOpacity(0.5),
-                      width: 1,
+                // Título principal grande y llamativo
+                Row(
+                  children: [
+                    Icon(
+                      Icons.landscape,
+                      color: ColoresApp.moradoPrimario,
+                      size: 28,
                     ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.landscape,
-                        color: ColoresApp.moradoPrimario,
-                        size: 16,
+                    const SizedBox(width: 12),
+                    const Text(
+                      'DIORAMA',
+                      style: TextStyle(
+                        color: ColoresApp.textoPrimario,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 2.0,
                       ),
-                      const SizedBox(width: 6),
-                      const Text(
-                        'COLECCIÓN',
-                        style: TextStyle(
-                          color: ColoresApp.moradoPrimario,
-                          fontSize: 10,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 8),
-                AutoScrollingText(
-                  text: 'DIORAMAS ÉPICOS',
-                  style: const TextStyle(
-                    color: ColoresApp.textoPrimario,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1.5,
+                const SizedBox(height: 4),
+                // Subtítulo descriptivo
+                Text(
+                  'Mundos Épicos Naboo Customs',
+                  style: TextStyle(
+                    color: ColoresApp.textoSecundario,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.5,
                   ),
-                  duration: const Duration(seconds: 6),
                 ),
               ],
-            ),
-          ),
-
-          // Icono de diorama decorativo
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  ColoresApp.moradoPrimario.withOpacity(0.3),
-                  ColoresApp.rosaAcento.withOpacity(0.1),
-                ],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: ColoresApp.moradoPrimario.withOpacity(0.3),
-                  blurRadius: 15,
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: const Icon(
-              Icons.terrain,
-              color: ColoresApp.moradoPrimario,
-              size: 24,
             ),
           ),
         ],
@@ -168,42 +132,51 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
     );
   }
 
-  Widget _construirBarraBusqueda() {
+  Widget _construirBarraBusquedaMejorada() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       decoration: BoxDecoration(
-        color: ColoresApp.tarjetaOscura.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(25),
+        color: ColoresApp.superficieOscura.withOpacity(0.9),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: ColoresApp.moradoPrimario.withOpacity(0.3),
-          width: 1,
+          width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
             color: ColoresApp.moradoPrimario.withOpacity(0.1),
-            blurRadius: 10,
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Row(
         children: [
-          Icon(
-            Icons.search,
-            color: ColoresApp.moradoPrimario.withOpacity(0.7),
-            size: 20,
+          // Icono de búsqueda con estilo
+          Container(
+            padding: const EdgeInsets.all(14),
+            child: Icon(
+              Icons.search_rounded,
+              color: ColoresApp.moradoPrimario,
+              size: 22,
+            ),
           ),
-          const SizedBox(width: 12),
+
+          // Campo de texto mejorado
           Expanded(
             child: TextField(
               controller: _busquedaController,
-              style: const TextStyle(color: ColoresApp.textoPrimario),
+              style: const TextStyle(
+                color: ColoresApp.textoPrimario,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
               decoration: InputDecoration(
                 hintText: 'Buscar dioramas épicos...',
                 hintStyle: TextStyle(
-                  color: ColoresApp.textoApagado,
-                  fontSize: 14,
+                  color: ColoresApp.textoApagado.withOpacity(0.7),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
                 ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(vertical: 16),
@@ -215,24 +188,33 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
               },
             ),
           ),
+
+          // Botón limpiar con animación
           if (_terminoBusqueda.isNotEmpty)
-            GestureDetector(
-              onTap: () {
-                _busquedaController.clear();
-                setState(() {
-                  _terminoBusqueda = '';
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: BoxDecoration(
-                  color: ColoresApp.error.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.clear,
-                  color: ColoresApp.error,
-                  size: 16,
+            Container(
+              margin: const EdgeInsets.only(right: 12),
+              child: GestureDetector(
+                onTap: () {
+                  _busquedaController.clear();
+                  setState(() {
+                    _terminoBusqueda = '';
+                  });
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: ColoresApp.error.withOpacity(0.15),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: ColoresApp.error.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: ColoresApp.error,
+                    size: 16,
+                  ),
                 ),
               ),
             ),
@@ -275,18 +257,44 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
+              // Información de resultados
+              SliverToBoxAdapter(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.inventory_2_outlined,
+                        color: ColoresApp.textoSecundario,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '${dioramasFiltrados.length} diorama${dioramasFiltrados.length == 1 ? '' : 's'} encontrado${dioramasFiltrados.length == 1 ? '' : 's'}',
+                        style: TextStyle(
+                          color: ColoresApp.textoSecundario,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // Grid de dioramas mejorado
               SliverPadding(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    crossAxisSpacing: 16,
-                    mainAxisSpacing: 16,
-                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 18,
+                    childAspectRatio: 0.68,
                   ),
                   delegate: SliverChildBuilderDelegate(
                         (context, index) {
-                      return _construirTarjetaDiorama(dioramasFiltrados[index]);
+                      return _construirTarjetaDioramaRedisenada(dioramasFiltrados[index]);
                     },
                     childCount: dioramasFiltrados.length,
                   ),
@@ -304,19 +312,18 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
     );
   }
 
-  Widget _construirTarjetaDiorama(Figura diorama) {
+  Widget _construirTarjetaDioramaRedisenada(Figura diorama) {
     return GestureDetector(
       onTap: () {
-        // TODO: Navegar a la pantalla de control del diorama
         _mostrarProximamente(diorama.nombre);
       },
       child: Container(
         decoration: BoxDecoration(
-          color: ColoresApp.tarjetaOscura.withOpacity(0.9),
+          color: ColoresApp.superficieOscura.withOpacity(0.9),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: ColoresApp.moradoPrimario.withOpacity(0.3),
-            width: 1,
+            width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
@@ -331,7 +338,7 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Imagen principal
+              // Imagen principal con overlay mejorado
               Expanded(
                 flex: 3,
                 child: Stack(
@@ -343,8 +350,8 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
                           begin: Alignment.topCenter,
                           end: Alignment.bottomCenter,
                           colors: [
+                            ColoresApp.moradoPrimario.withOpacity(0.1),
                             ColoresApp.superficieOscura,
-                            ColoresApp.tarjetaOscura,
                           ],
                         ),
                       ),
@@ -384,79 +391,149 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
                       ),
                     ),
 
-                    // Overlay de gradiente
+                    // Overlay de gradiente sutil
                     Positioned(
                       bottom: 0,
                       left: 0,
                       right: 0,
                       child: Container(
-                        height: 60,
+                        height: 40,
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             begin: Alignment.topCenter,
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              ColoresApp.tarjetaOscura.withOpacity(0.9),
+                              ColoresApp.superficieOscura.withOpacity(0.8),
                             ],
                           ),
                         ),
                       ),
                     ),
 
-                    // Indicadores de características
+                    // Badge de tipo en la esquina
                     Positioned(
-                      top: 8,
-                      right: 8,
-                      child: _construirIndicadoresCaracteristicas(diorama),
+                      top: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: ColoresApp.moradoPrimario.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Text(
+                          'DIORAMA',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
 
-              // Información del diorama
-              Expanded(
-                flex: 2,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Nombre del diorama con auto-scroll
-                      AutoScrollingText(
-                        text: diorama.nombre,
-                        style: const TextStyle(
-                          color: ColoresApp.textoPrimario,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                        duration: const Duration(seconds: 4),
-                        maxLines: 1,
+              // Información del diorama mejorada
+              Container(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Nombre del diorama - AHORA VISIBLE Y BIEN DISEÑADO
+                    Text(
+                      diorama.nombre,
+                      style: const TextStyle(
+                        color: ColoresApp.textoPrimario,
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.2,
+                        height: 1.2,
                       ),
-                      const SizedBox(height: 6),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
 
-                      // Descripción con auto-scroll
-                      if (diorama.descripcion.isNotEmpty)
-                        Expanded(
-                          child: AutoScrollingText(
-                            text: diorama.descripcion,
-                            style: const TextStyle(
-                              color: ColoresApp.textoSecundario,
-                              fontSize: 11,
-                              height: 1.3,
-                            ),
-                            duration: const Duration(seconds: 5),
-                            maxLines: 2,
-                          ),
+                    // Descripción breve
+                    if (diorama.descripcion.isNotEmpty)
+                      Text(
+                        diorama.descripcion,
+                        style: TextStyle(
+                          color: ColoresApp.textoSecundario.withOpacity(0.8),
+                          fontSize: 11,
+                          height: 1.3,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
 
-                      const SizedBox(height: 8),
+                    const SizedBox(height: 10),
 
-                      // Componentes disponibles
-                      _construirComponentesDisponibles(diorama),
-                    ],
-                  ),
+                    // Componentes disponibles usando Wrap
+                    Wrap(
+                      spacing: 6,
+                      runSpacing: 4,
+                      children: [
+                        // LEDs
+                        if (diorama.componentes.leds.cantidad > 0)
+                          _construirChipComponente(
+                            Icons.lightbulb_outline,
+                            '${diorama.componentes.leds.cantidad}',
+                            ColoresApp.verdeAcento,
+                          ),
+
+                        // Música
+                        if (diorama.componentes.musica.disponible)
+                          _construirChipComponente(
+                            Icons.music_note_outlined,
+                            '${diorama.componentes.musica.cantidad}',
+                            ColoresApp.cyanPrimario,
+                          ),
+
+                        // Humidificador
+                        if (diorama.componentes.humidificador.disponible)
+                          _construirChipComponente(
+                            Icons.cloud_outlined,
+                            '',
+                            ColoresApp.informacion,
+                          ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Botón de acceso centrado
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              ColoresApp.moradoPrimario.withOpacity(0.8),
+                              ColoresApp.rosaAcento.withOpacity(0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(
+                          Icons.play_arrow_rounded,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -466,99 +543,28 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
     );
   }
 
-  Widget _construirIndicadoresCaracteristicas(Figura diorama) {
-    return Column(
-      children: [
-        // Indicador de tipo Diorama
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: ColoresApp.moradoPrimario.withOpacity(0.9),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Text(
-            'DIORAMA',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 8,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _construirComponentesDisponibles(Figura diorama) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // LEDs
-        if (diorama.componentes.leds.cantidad > 0)
-          _construirChipComponente(
-            Icons.lightbulb_outline,
-            '${diorama.componentes.leds.cantidad}',
-            ColoresApp.verdeAcento,
-          ),
-
-        // Música
-        if (diorama.componentes.musica.disponible)
-          _construirChipComponente(
-            Icons.music_note_outlined,
-            '${diorama.componentes.musica.cantidad}',
-            ColoresApp.cyanPrimario,
-          ),
-
-        // Humidificador
-        if (diorama.componentes.humidificador.disponible)
-          _construirChipComponente(
-            Icons.cloud_outlined,
-            '',
-            ColoresApp.azulPrimario,
-          ),
-
-        const Spacer(),
-
-        // Botón de acceso rápido
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: ColoresApp.moradoPrimario.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Icon(
-            Icons.play_arrow,
-            color: ColoresApp.moradoPrimario,
-            size: 16,
-          ),
-        ),
-      ],
-    );
-  }
-
   Widget _construirChipComponente(IconData icono, String texto, Color color) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withOpacity(0.15),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: color.withOpacity(0.5),
-          width: 0.5,
+          color: color.withOpacity(0.4),
+          width: 1,
         ),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icono, size: 10, color: color),
+          Icon(icono, size: 12, color: color),
           if (texto.isNotEmpty) ...[
-            const SizedBox(width: 2),
+            const SizedBox(width: 3),
             Text(
               texto,
               style: TextStyle(
                 color: color,
-                fontSize: 8,
+                fontSize: 9,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -569,20 +575,28 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
   }
 
   Widget _construirCargando() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(
-            color: ColoresApp.moradoPrimario,
-            strokeWidth: 3,
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: ColoresApp.moradoPrimario.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const CircularProgressIndicator(
+              color: ColoresApp.moradoPrimario,
+              strokeWidth: 3,
+            ),
           ),
-          SizedBox(height: 24),
-          Text(
+          const SizedBox(height: 24),
+          const Text(
             'Cargando dioramas épicos...',
             style: TextStyle(
               color: ColoresApp.textoSecundario,
               fontSize: 16,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
