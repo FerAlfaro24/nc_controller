@@ -349,7 +349,7 @@ class _PantallaHomeState extends State<PantallaHome>
         body: Container(
           decoration: const BoxDecoration(
             image: DecorationImage(
-              image: AssetImage('assets/imagenes/fondovacio.png'),
+              image: AssetImage('assets/imagenes/fondologin.png'),
               fit: BoxFit.cover,
             ),
           ),

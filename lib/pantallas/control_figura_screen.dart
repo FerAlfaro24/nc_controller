@@ -1,4 +1,3 @@
-// lib/pantallas/control_figura_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -126,6 +125,14 @@ class _PantallaControlFiguraState extends State<PantallaControlFigura>
 
   @override
   Widget build(BuildContext context) {
+    // Establece el color de la barra de estado a negro
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.black,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -181,7 +188,6 @@ class _PantallaControlFiguraState extends State<PantallaControlFigura>
       ),
       child: Row(
         children: [
-          // Botón regresar futurista
           Container(
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -213,8 +219,6 @@ class _PantallaControlFiguraState extends State<PantallaControlFigura>
             ),
           ),
           const SizedBox(width: 20),
-
-          // Información de la figura
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,7 +301,6 @@ class _PantallaControlFiguraState extends State<PantallaControlFigura>
         borderRadius: BorderRadius.circular(18),
         child: Stack(
           children: [
-            // Imagen principal con animación de pulso
             AnimatedBuilder(
               animation: _pulseAnimation,
               builder: (context, child) {
@@ -345,8 +348,6 @@ class _PantallaControlFiguraState extends State<PantallaControlFigura>
                 );
               },
             ),
-
-            // Overlay con gradiente
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -359,8 +360,6 @@ class _PantallaControlFiguraState extends State<PantallaControlFigura>
                 ),
               ),
             ),
-
-            // Indicadores de imágenes múltiples
             if (widget.figura.imagenesExtra.isNotEmpty)
               Positioned(
                 bottom: 16,
@@ -384,8 +383,6 @@ class _PantallaControlFiguraState extends State<PantallaControlFigura>
                   ),
                 ),
               ),
-
-            // Badge de tipo
             Positioned(
               top: 16,
               right: 16,
@@ -475,7 +472,6 @@ class _PantallaControlFiguraState extends State<PantallaControlFigura>
 
     return Column(
       children: [
-        // Control de LEDs
         if (widget.figura.componentes.leds.cantidad > 0) ...[
           LEDControlWidget(
             ledConfig: widget.figura.componentes.leds,
@@ -488,8 +484,6 @@ class _PantallaControlFiguraState extends State<PantallaControlFigura>
           ),
           const SizedBox(height: 24),
         ],
-
-        // Control de Música
         if (widget.figura.componentes.musica.disponible) ...[
           MusicPlayerWidget(
             musicConfig: widget.figura.componentes.musica,
@@ -504,8 +498,6 @@ class _PantallaControlFiguraState extends State<PantallaControlFigura>
           ),
           const SizedBox(height: 24),
         ],
-
-        // Control de Humo
         if (widget.figura.componentes.humidificador.disponible) ...[
           SmokeControlWidget(
             bluetoothService: _bluetoothService,

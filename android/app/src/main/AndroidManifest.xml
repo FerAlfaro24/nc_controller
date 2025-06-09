@@ -1,5 +1,6 @@
 <!-- Archivo: android/app/src/main/AndroidManifest.xml -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.naboocustoms.nccontroller">
 
     <!-- Permisos básicos -->
@@ -39,10 +40,19 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
+            <!-- META-DATA PARA DESACTIVAR SPLASH SCREEN -->
+            <meta-data
+                android:name="io.flutter.embedding.android.SplashScreenDrawable"
+                android:resource="@android:color/transparent" />
+
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
-                android:resource="@style/NormalTheme"
-                />
+                android:resource="@style/NormalTheme" />
+
+            <!-- DESACTIVAR SPLASH SCREEN DE ANDROID 12+ -->
+            <meta-data
+                android:name="android.app.splashscreen.SplashScreenTheme"
+                android:resource="@style/LaunchTheme" />
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
