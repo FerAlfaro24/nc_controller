@@ -11,6 +11,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  shared_preferences: ^2.2.2  # Agrega esta línea
+  path_provider: ^2.1.1  # Agrega esta línea
+
+
 
   # Iconos de Cupertino
   cupertino_icons: ^1.0.8
@@ -54,18 +58,12 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^5.0.0
 
+
 flutter:
   uses-material-design: true
 
-  # Recursos de la app
   assets:
     - assets/imagenes/
     - assets/audio/
     - assets/icons/
 
-  fonts:
-    - family: Orbitron
-      fonts:
-        - asset: fonts/Orbitron-Regular.ttf
-        - asset: fonts/Orbitron-Bold.ttf
-          weight: 700

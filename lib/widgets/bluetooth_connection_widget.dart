@@ -370,7 +370,7 @@ class _BluetoothConnectionWidgetState extends State<BluetoothConnectionWidget>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'DISPOSITIVOS ENCONTRADOS',
+                  'DISPOSITIVOS',
                   style: TextStyle(
                     color: ColoresApp.cyanPrimario,
                     fontSize: 14,

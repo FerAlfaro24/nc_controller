@@ -19,19 +19,126 @@ class PantallaHome extends StatefulWidget {
   State<PantallaHome> createState() => _PantallaHomeState();
 }
 
-class _PantallaHomeState extends State<PantallaHome> {
+class _PantallaHomeState extends State<PantallaHome>
+    with TickerProviderStateMixin {
   bool _publicidadMostradaEnEstaSession = false;
   final FirebaseService _firebaseService = FirebaseService();
+
+  // Controladores de animación
+  late AnimationController _logoAnimationController;
+  late AnimationController _cardsAnimationController;
+  late AnimationController _fadeAnimationController;
+  late AnimationController _pulseAnimationController;
+
+  late Animation<double> _logoScaleAnimation;
+  late Animation<double> _logoOpacityAnimation;
+  late Animation<Offset> _cardsSlideAnimation;
+  late Animation<double> _fadeAnimation;
+  late Animation<double> _pulseAnimation;
 
   @override
   void initState() {
     super.initState();
     print('🏠 PantallaHome: initState ejecutado');
+    _initAnimations();
+
     Future.delayed(const Duration(milliseconds: 800), () {
       if (mounted) {
         _verificarYMostrarPublicidad();
       }
     });
+  }
+
+  void _initAnimations() {
+    // Animación del logo
+    _logoAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _logoScaleAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _logoAnimationController,
+      curve: Curves.elasticOut,
+    ));
+
+    _logoOpacityAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _logoAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Animación de las tarjetas
+    _cardsAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    );
+
+    _cardsSlideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.5),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _cardsAnimationController,
+      curve: Curves.easeOutCubic,
+    ));
+
+    // Animación de fade general
+    _fadeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Animación de pulso continuo
+    _pulseAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    );
+
+    _pulseAnimation = Tween<double>(
+      begin: 1.0,
+      end: 1.05,
+    ).animate(CurvedAnimation(
+      parent: _pulseAnimationController,
+      curve: Curves.easeInOut,
+    ));
+
+    // Iniciar animaciones secuenciales
+    _startAnimations();
+  }
+
+  void _startAnimations() async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    _logoAnimationController.forward();
+
+    await Future.delayed(const Duration(milliseconds: 500));
+    _fadeAnimationController.forward();
+
+    await Future.delayed(const Duration(milliseconds: 700));
+    _cardsAnimationController.forward();
+
+    // Iniciar pulso continuo
+    _pulseAnimationController.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _logoAnimationController.dispose();
+    _cardsAnimationController.dispose();
+    _fadeAnimationController.dispose();
+    _pulseAnimationController.dispose();
+    super.dispose();
   }
 
   Future<void> _verificarYMostrarPublicidad() async {
@@ -115,8 +222,21 @@ class _PantallaHomeState extends State<PantallaHome> {
   void _navegarANaves() {
     print('🚀 Navegando a catálogo de naves...');
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const PantallaCatalogoNaves(),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const PantallaCatalogoNaves(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOutCubic,
+            )),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 600),
       ),
     ).then((_) {
       print('🔙 Regresando del catálogo de naves');
@@ -126,8 +246,21 @@ class _PantallaHomeState extends State<PantallaHome> {
   void _navegarADioramas() {
     print('🏛️ Navegando a catálogo de dioramas...');
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const PantallaCatalogoDioramas(),
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => const PantallaCatalogoDioramas(),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(1.0, 0.0),
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOutCubic,
+            )),
+            child: child,
+          );
+        },
+        transitionDuration: const Duration(milliseconds: 600),
       ),
     ).then((_) {
       print('🔙 Regresando del catálogo de dioramas');
@@ -141,20 +274,74 @@ class _PantallaHomeState extends State<PantallaHome> {
       child: Scaffold(
         resizeToAvoidBottomInset: true,
         appBar: AppBar(
-          title: const Text('NABOO CUSTOMS'),
-          backgroundColor: Colors.black.withOpacity(0.8),
+          title: ShaderMask(
+            shaderCallback: (bounds) => LinearGradient(
+              colors: [
+                ColoresApp.cyanPrimario,
+                ColoresApp.azulPrimario,
+              ],
+            ).createShader(bounds),
+            child: const Text(
+              'NC CONTROLLER',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          backgroundColor: Colors.black.withOpacity(0.9),
           elevation: 0,
           leading: Builder(
-            builder: (context) => IconButton(
-              icon: const Icon(Icons.menu),
-              onPressed: () => Scaffold.of(context).openDrawer(),
+            builder: (context) => Container(
+              margin: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ColoresApp.cyanPrimario.withOpacity(0.3),
+                    ColoresApp.azulPrimario.withOpacity(0.3),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: IconButton(
+                icon: const Icon(Icons.menu),
+                onPressed: () => Scaffold.of(context).openDrawer(),
+              ),
             ),
           ),
           actions: [
-            IconButton(
-              icon: const Icon(Icons.campaign, color: ColoresApp.naranjaAcento),
-              onPressed: _debugMostrarPublicidad,
-              tooltip: 'Debug Publicidad',
+            AnimatedBuilder(
+              animation: _pulseAnimation,
+              builder: (context, child) {
+                return Transform.scale(
+                  scale: _pulseAnimation.value,
+                  child: Container(
+                    margin: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          ColoresApp.naranjaAcento.withOpacity(0.3),
+                          ColoresApp.rojoAcento.withOpacity(0.3),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: ColoresApp.naranjaAcento.withOpacity(0.3),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.campaign, color: ColoresApp.naranjaAcento),
+                      onPressed: _debugMostrarPublicidad,
+                      tooltip: 'Debug Publicidad',
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ),
@@ -168,285 +355,464 @@ class _PantallaHomeState extends State<PantallaHome> {
           ),
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.all(20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                StreamBuilder<ConfiguracionApp>(
-                  stream: _firebaseService.obtenerConfiguracion(),
-                  builder: (context, snapshot) {
-                    print('🏠 StreamBuilder marquee - ConnectionState: ${snapshot.connectionState}, HasData: ${snapshot.hasData}, HasError: ${snapshot.hasError}');
-                    if (snapshot.hasError) {
-                      print('   Error en Stream Marquee: ${snapshot.error}');
-                    }
-                    String textoMarquee = '¡Bienvenido a Naboo Customs! 🚀';
-                    if (snapshot.hasData) {
-                      final configuracion = snapshot.data!;
-                      if (configuracion.textoMarquee.isNotEmpty) {
-                        textoMarquee = configuracion.textoMarquee;
-                      }
-                      print('🎨 Texto marquee actualizado: "$textoMarquee"');
-                    } else if (snapshot.connectionState == ConnectionState.waiting) {
-                      textoMarquee = 'Cargando noticias...';
-                    } else if (snapshot.hasError) {
-                      textoMarquee = 'Error al cargar noticias.';
-                    }
-                    return Container(
-                      key: ValueKey(textoMarquee),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: ColoresApp.cyanPrimario.withOpacity(0.5)),
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: CompleteTextMarquee(
-                        text: textoMarquee,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.5,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black,
-                              offset: Offset(0, 1),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                        duration: const Duration(seconds: 10),
-                        height: 40,
-                        backgroundColor: Colors.black.withOpacity(0.7),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      ),
-                    );
-                  },
-                ),
-                const SizedBox(height: 32),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.4),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'CENTRO DE CONTROL',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.7),
-                              offset: const Offset(0, 2),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Controla tus figuras futuristas',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 16,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.5),
-                              offset: const Offset(0, 1),
-                              blurRadius: 2,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 32),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _tarjetaNavegacion(
-                        'NAVES',
-                        Icons.rocket,
-                        ColoresApp.azulPrimario,
-                        _navegarANaves,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _tarjetaNavegacion(
-                        'DIORAMAS',
-                        Icons.landscape,
-                        ColoresApp.moradoPrimario,
-                        _navegarADioramas,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 32),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: ColoresApp.tarjetaOscura.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: ColoresApp.bordeGris),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.link,
-                            color: ColoresApp.verdeAcento,
-                            size: 24,
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'ENLACES RÁPIDOS',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.5),
-                                  offset: const Offset(0, 1),
-                                  blurRadius: 2,
+                      // Marquee animado (movido arriba del logo)
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: StreamBuilder<ConfiguracionApp>(
+                          stream: _firebaseService.obtenerConfiguracion(),
+                          builder: (context, snapshot) {
+                            print('🏠 StreamBuilder marquee - ConnectionState: ${snapshot.connectionState}, HasData: ${snapshot.hasData}, HasError: ${snapshot.hasError}');
+                            if (snapshot.hasError) {
+                              print('   Error en Stream Marquee: ${snapshot.error}');
+                            }
+                            String textoMarquee = '¡Bienvenido a Naboo Customs! 🚀';
+                            if (snapshot.hasData) {
+                              final configuracion = snapshot.data!;
+                              if (configuracion.textoMarquee.isNotEmpty) {
+                                textoMarquee = configuracion.textoMarquee;
+                              }
+                              print('🎨 Texto marquee actualizado: "$textoMarquee"');
+                            } else if (snapshot.connectionState == ConnectionState.waiting) {
+                              textoMarquee = 'Cargando noticias...';
+                            } else if (snapshot.hasError) {
+                              textoMarquee = 'Error al cargar noticias.';
+                            }
+                            return Container(
+                              key: ValueKey(textoMarquee),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    ColoresApp.cyanPrimario.withOpacity(0.2),
+                                    ColoresApp.azulPrimario.withOpacity(0.2),
+                                  ],
                                 ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _botonEnlace(
-                              'Instagram',
-                              Icons.camera_alt,
-                              ColoresApp.rosaAcento,
-                              'https://www.instagram.com/naboo.customs/',
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _botonEnlace(
-                              'Facebook',
-                              Icons.facebook,
-                              ColoresApp.azulPrimario,
-                              'https://www.facebook.com/Nabbo.customs/',
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        width: double.infinity,
-                        child: _botonEnlace(
-                          'Catálogo en Drive',
-                          Icons.folder_open,
-                          ColoresApp.naranjaAcento,
-                          'https://drive.google.com/drive/folders/1bzZ8g6QDotavLFLg9h5puTd4bvqoBCQL',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: ColoresApp.tarjetaOscura.withOpacity(0.9),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: ColoresApp.bordeGris),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  Color(0xFF833AB4),
-                                  Color(0xFFE1306C),
-                                  Color(0xFFFCAF45),
+                                border: Border.all(
+                                  color: ColoresApp.cyanPrimario.withOpacity(0.5),
+                                  width: 2,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: ColoresApp.cyanPrimario.withOpacity(0.3),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 2),
+                                  ),
                                 ],
                               ),
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  blurRadius: 4,
-                                  offset: const Offset(0, 2),
+                              child: CompleteTextMarquee(
+                                text: textoMarquee,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 0.8,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black,
+                                      offset: Offset(0, 1),
+                                      blurRadius: 3,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.camera_alt,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'SÍGUENOS EN INSTAGRAM',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              shadows: [
-                                Shadow(
-                                  color: Colors.black.withOpacity(0.5),
-                                  offset: const Offset(0, 1),
-                                  blurRadius: 2,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                                duration: const Duration(seconds: 12),
+                                height: 50,
+                                backgroundColor: Colors.black.withOpacity(0.4),
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                      const SizedBox(height: 16),
-                      const InstagramFeedWidget(),
+
+                      const SizedBox(height: 20),
                     ],
                   ),
                 ),
-                const SizedBox(height: 100),
+
+                // Logo animado (limpio y más grande)
+                FadeTransition(
+                  opacity: _logoOpacityAnimation,
+                  child: AnimatedBuilder(
+                    animation: _logoScaleAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _logoScaleAnimation.value,
+                        child: Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                          child: Center(
+                            child: Image.asset(
+                              'assets/imagenes/img.png',
+                              height: 160,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 12),
+
+                      // Título del centro de control
+                      FadeTransition(
+                        opacity: _fadeAnimation,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.black.withOpacity(0.6),
+                                Colors.black.withOpacity(0.3),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: ColoresApp.cyanPrimario.withOpacity(0.4),
+                              width: 2,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: ColoresApp.cyanPrimario.withOpacity(0.2),
+                                blurRadius: 20,
+                                offset: const Offset(0, 8),
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.4),
+                                blurRadius: 15,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ShaderMask(
+                                shaderCallback: (bounds) => LinearGradient(
+                                  colors: [
+                                    ColoresApp.cyanPrimario,
+                                    ColoresApp.azulPrimario,
+                                  ],
+                                ).createShader(bounds),
+                                child: Text(
+                                  'CENTRO DE CONTROL',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 32,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 2,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black.withOpacity(0.7),
+                                        offset: const Offset(0, 2),
+                                        blurRadius: 4,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Controla tus figuras futuristas',
+                                style: TextStyle(
+                                  color: ColoresApp.cyanPrimario.withOpacity(0.9),
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w500,
+                                  letterSpacing: 0.5,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withOpacity(0.5),
+                                      offset: const Offset(0, 1),
+                                      blurRadius: 2,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Tarjetas de navegación animadas
+                      SlideTransition(
+                        position: _cardsSlideAnimation,
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: _tarjetaNavegacion(
+                                  'NAVES',
+                                  Icons.rocket,
+                                  ColoresApp.azulPrimario,
+                                  _navegarANaves,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _tarjetaNavegacion(
+                                  'DIORAMAS',
+                                  Icons.landscape,
+                                  ColoresApp.moradoPrimario,
+                                  _navegarADioramas,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Enlaces rápidos mejorados
+                      SlideTransition(
+                        position: _cardsSlideAnimation,
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  ColoresApp.tarjetaOscura.withOpacity(0.9),
+                                  ColoresApp.tarjetaOscura.withOpacity(0.7),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: ColoresApp.verdeAcento.withOpacity(0.4),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: ColoresApp.verdeAcento.withOpacity(0.2),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            ColoresApp.verdeAcento.withOpacity(0.3),
+                                            ColoresApp.verdeAcento.withOpacity(0.1),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: ColoresApp.verdeAcento.withOpacity(0.5),
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.link,
+                                        color: ColoresApp.verdeAcento,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    ShaderMask(
+                                      shaderCallback: (bounds) => LinearGradient(
+                                        colors: [
+                                          ColoresApp.verdeAcento,
+                                          ColoresApp.cyanPrimario,
+                                        ],
+                                      ).createShader(bounds),
+                                      child: Text(
+                                        'ENLACES',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 1,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black.withOpacity(0.5),
+                                              offset: const Offset(0, 1),
+                                              blurRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _botonEnlace(
+                                        'Instagram',
+                                        Icons.camera_alt,
+                                        ColoresApp.rosaAcento,
+                                        'https://www.instagram.com/naboo.customs/',
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _botonEnlace(
+                                        'Facebook',
+                                        Icons.facebook,
+                                        ColoresApp.azulPrimario,
+                                        'https://www.facebook.com/Nabbo.customs/',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: _botonEnlace(
+                                    'Catálogo en Drive',
+                                    Icons.folder_open,
+                                    ColoresApp.naranjaAcento,
+                                    'https://drive.google.com/drive/folders/1bzZ8g6QDotavLFLg9h5puTd4bvqoBCQL',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Instagram feed mejorado
+                      SlideTransition(
+                        position: _cardsSlideAnimation,
+                        child: FadeTransition(
+                          opacity: _fadeAnimation,
+                          child: Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  ColoresApp.tarjetaOscura.withOpacity(0.9),
+                                  ColoresApp.tarjetaOscura.withOpacity(0.7),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: ColoresApp.rosaAcento.withOpacity(0.4),
+                                width: 2,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: ColoresApp.rosaAcento.withOpacity(0.2),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.3),
+                                  blurRadius: 15,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFF833AB4),
+                                            Color(0xFFE1306C),
+                                            Color(0xFFFCAF45),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: ColoresApp.rosaAcento.withOpacity(0.4),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 3),
+                                          ),
+                                        ],
+                                      ),
+                                      child: const Icon(
+                                        Icons.camera_alt,
+                                        color: Colors.white,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    ShaderMask(
+                                      shaderCallback: (bounds) => const LinearGradient(
+                                        colors: [
+                                          Color(0xFF833AB4),
+                                          Color(0xFFE1306C),
+                                          Color(0xFFFCAF45),
+                                        ],
+                                      ).createShader(bounds),
+                                      child: Text(
+                                        'SÍGUENOS',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 0.8,
+                                          shadows: [
+                                            Shadow(
+                                              color: Colors.black.withOpacity(0.5),
+                                              offset: const Offset(0, 1),
+                                              blurRadius: 2,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 20),
+                                const InstagramFeedWidget(),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
@@ -459,54 +825,103 @@ class _PantallaHomeState extends State<PantallaHome> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF252525),
+        backgroundColor: ColoresApp.tarjetaOscura,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: ColoresApp.advertencia.withOpacity(0.5),
+            width: 2,
+          ),
         ),
         title: Row(
           children: [
-            Icon(
-              Icons.logout,
-              color: ColoresApp.advertencia,
-              size: 24,
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ColoresApp.advertencia.withOpacity(0.3),
+                    ColoresApp.rojoAcento.withOpacity(0.3),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                Icons.logout,
+                color: ColoresApp.advertencia,
+                size: 24,
+              ),
             ),
             const SizedBox(width: 12),
-            const Text(
-              'Cerrar Sesión',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+            ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
+                colors: [
+                  ColoresApp.advertencia,
+                  ColoresApp.rojoAcento,
+                ],
+              ).createShader(bounds),
+              child: const Text(
+                'Cerrar Sesión',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           '¿Estás seguro de que quieres cerrar sesión y regresar al inicio?',
           style: TextStyle(
-            color: Colors.grey,
+            color: ColoresApp.textoSecundario,
             fontSize: 16,
+            height: 1.4,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text(
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            ),
+            child: Text(
               'Cancelar',
               style: TextStyle(
-                color: Colors.grey,
+                color: ColoresApp.textoSecundario,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.of(context).pop(true),
-            icon: const Icon(Icons.logout, size: 18),
-            label: const Text('Cerrar Sesión'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColoresApp.advertencia,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  ColoresApp.advertencia,
+                  ColoresApp.rojoAcento,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: ColoresApp.advertencia.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              onPressed: () => Navigator.of(context).pop(true),
+              icon: const Icon(Icons.logout, size: 18),
+              label: const Text('Cerrar Sesión'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
             ),
           ),
@@ -530,16 +945,18 @@ class _PantallaHomeState extends State<PantallaHome> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
+          SnackBar(
+            content: const Row(
               children: [
-                Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                Icon(Icons.check_circle, color: Colors.white, size: 20),
                 SizedBox(width: 8),
                 Text('Sesión cerrada correctamente'),
               ],
             ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
+            backgroundColor: ColoresApp.exito,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 2),
           ),
         );
 
@@ -547,7 +964,22 @@ class _PantallaHomeState extends State<PantallaHome> {
 
         if (mounted) {
           Navigator.of(context).pushAndRemoveUntil(
-            MaterialPageRoute(builder: (context) => const PantallaLogin()),
+            PageRouteBuilder(
+              pageBuilder: (context, animation, secondaryAnimation) => const PantallaLogin(),
+              transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(-1.0, 0.0),
+                    end: Offset.zero,
+                  ).animate(CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeInOutCubic,
+                  )),
+                  child: child,
+                );
+              },
+              transitionDuration: const Duration(milliseconds: 600),
+            ),
                 (route) => false,
           );
         }
@@ -566,47 +998,77 @@ class _PantallaHomeState extends State<PantallaHome> {
 
   Widget _construirDrawer(BuildContext context) {
     return Drawer(
-      backgroundColor: const Color(0xFF1A1A1A),
+      backgroundColor: const Color(0xFF0F0F0F),
       child: Column(
         children: [
           Container(
-            height: 200,
+            height: 220,
             width: double.infinity,
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFF1E3A8A),
-                  Color(0xFF7C3AED),
+                  ColoresApp.azulPrimario,
+                  ColoresApp.cyanPrimario,
+                  ColoresApp.moradoPrimario,
                 ],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: ColoresApp.cyanPrimario.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            child: const Center(
+            child: SafeArea(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.rocket_launch,
-                    size: 60,
-                    color: Colors.white,
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.rocket_launch,
+                      size: 50,
+                      color: Colors.white,
+                    ),
                   ),
-                  SizedBox(height: 16),
-                  Text(
+                  const SizedBox(height: 16),
+                  const Text(
                     'NABOO CUSTOMS',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 20,
+                      fontSize: 22,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 1.5,
+                      letterSpacing: 2,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black,
+                          offset: Offset(0, 2),
+                          blurRadius: 4,
+                        ),
+                      ],
                     ),
                   ),
                   Text(
                     'Control Center',
                     style: TextStyle(
-                      color: Colors.white70,
+                      color: Colors.white.withOpacity(0.8),
                       fontSize: 14,
-                      letterSpacing: 0.5,
+                      letterSpacing: 1,
+                      fontWeight: FontWeight.w300,
                     ),
                   ),
                 ],
@@ -614,29 +1076,66 @@ class _PantallaHomeState extends State<PantallaHome> {
             ),
           ),
           Expanded(
-            child: ListView(
-              padding: EdgeInsets.zero,
-              children: [
-                _itemDrawer(context, Icons.home, 'INICIO', () => Navigator.pop(context)),
-                _itemDrawer(context, Icons.rocket, 'NAVES', () {
-                  Navigator.pop(context);
-                  _navegarANaves();
-                }),
-                _itemDrawer(context, Icons.landscape, 'DIORAMAS', () {
-                  Navigator.pop(context);
-                  _navegarADioramas();
-                }),
-                const Divider(color: Color(0xFF404040), height: 1, thickness: 1),
-                _itemDrawer(context, Icons.help_outline, 'AYUDA', () {
-                  Navigator.pop(context);
-                  _mostrarAyuda(context);
-                }),
-              ],
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFF0F0F0F),
+                    const Color(0xFF1A1A1A),
+                  ],
+                ),
+              ),
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  const SizedBox(height: 20),
+                  _itemDrawer(context, Icons.home, 'INICIO', () => Navigator.pop(context)),
+                  _itemDrawer(context, Icons.rocket, 'NAVES', () {
+                    Navigator.pop(context);
+                    _navegarANaves();
+                  }),
+                  _itemDrawer(context, Icons.landscape, 'DIORAMAS', () {
+                    Navigator.pop(context);
+                    _navegarADioramas();
+                  }),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    height: 1,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          ColoresApp.cyanPrimario.withOpacity(0.5),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                  _itemDrawer(context, Icons.help_outline, 'AYUDA', () {
+                    Navigator.pop(context);
+                    _mostrarAyuda(context);
+                  }),
+                ],
+              ),
             ),
           ),
-          const Divider(color: Color(0xFF404040), height: 1, thickness: 1),
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            height: 1,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.transparent,
+                  ColoresApp.rojoAcento.withOpacity(0.5),
+                  Colors.transparent,
+                ],
+              ),
+            ),
+          ),
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.all(16.0),
             child: _itemDrawer(context, Icons.exit_to_app, 'CERRAR SESIÓN', () async {
               Navigator.pop(context);
               await _cerrarSesionSegura(context);
@@ -651,18 +1150,82 @@ class _PantallaHomeState extends State<PantallaHome> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF252525),
-        title: const Text('Cerrar Sesión', style: TextStyle(color: Colors.white)),
-        content: const Text('¿Estás seguro de que quieres cerrar sesión?', style: TextStyle(color: Colors.grey)),
+        backgroundColor: ColoresApp.tarjetaOscura,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: ColoresApp.rojoAcento.withOpacity(0.5),
+            width: 2,
+          ),
+        ),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ColoresApp.rojoAcento.withOpacity(0.3),
+                    ColoresApp.advertencia.withOpacity(0.3),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.logout,
+                color: ColoresApp.rojoAcento,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
+                colors: [
+                  ColoresApp.rojoAcento,
+                  ColoresApp.advertencia,
+                ],
+              ).createShader(bounds),
+              child: const Text(
+                'Cerrar Sesión',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          '¿Estás seguro de que quieres cerrar sesión?',
+          style: TextStyle(
+            color: ColoresApp.textoSecundario,
+            fontSize: 16,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'Cancelar',
+              style: TextStyle(color: ColoresApp.textoSecundario),
+            ),
           ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-            child: const Text('Cerrar Sesión'),
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [ColoresApp.rojoAcento, ColoresApp.advertencia],
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Cerrar Sesión'),
+            ),
           ),
         ],
       ),
@@ -673,21 +1236,22 @@ class _PantallaHomeState extends State<PantallaHome> {
         print('🚪 Iniciando proceso de cierre de sesión...');
 
         final authService = AuthService();
-
         await authService.cerrarSesion();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Row(
+            SnackBar(
+              content: const Row(
                 children: [
-                  Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+                  Icon(Icons.check_circle, color: Colors.white, size: 20),
                   SizedBox(width: 8),
                   Text('¡Hasta luego! Sesión cerrada.'),
                 ],
               ),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 2),
+              backgroundColor: ColoresApp.exito,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              duration: const Duration(seconds: 2),
             ),
           );
 
@@ -695,7 +1259,22 @@ class _PantallaHomeState extends State<PantallaHome> {
 
           if (mounted) {
             Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (context) => const PantallaLogin()),
+              PageRouteBuilder(
+                pageBuilder: (context, animation, secondaryAnimation) => const PantallaLogin(),
+                transitionsBuilder: (context, animation, secondaryAnimation, child) {
+                  return SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(-1.0, 0.0),
+                      end: Offset.zero,
+                    ).animate(CurvedAnimation(
+                      parent: animation,
+                      curve: Curves.easeInOutCubic,
+                    )),
+                    child: child,
+                  );
+                },
+                transitionDuration: const Duration(milliseconds: 600),
+              ),
                   (route) => false,
             );
           }
@@ -725,25 +1304,52 @@ class _PantallaHomeState extends State<PantallaHome> {
   }
 
   Widget _itemDrawer(BuildContext context, IconData icono, String titulo, VoidCallback onTap, {bool esLogout = false}) {
-    final colorIcono = esLogout ? Colors.redAccent : ColoresApp.cyanPrimario.withOpacity(0.8);
-    final colorTexto = esLogout ? Colors.redAccent : Colors.white.withOpacity(0.9);
+    final colorIcono = esLogout ? ColoresApp.rojoAcento : ColoresApp.cyanPrimario;
+    final colorTexto = esLogout ? ColoresApp.rojoAcento : Colors.white;
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        gradient: esLogout
+            ? LinearGradient(
+          colors: [
+            ColoresApp.rojoAcento.withOpacity(0.1),
+            Colors.transparent,
+          ],
+        )
+            : null,
+      ),
       child: ListTile(
-        leading: Icon(icono, color: colorIcono, size: 24),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                colorIcono.withOpacity(0.2),
+                colorIcono.withOpacity(0.1),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: colorIcono.withOpacity(0.3),
+            ),
+          ),
+          child: Icon(icono, color: colorIcono, size: 20),
+        ),
         title: Text(
           titulo,
           style: TextStyle(
             color: colorTexto,
             fontSize: 14,
-            fontWeight: FontWeight.w500,
-            letterSpacing: 0.3,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
         ),
         onTap: onTap,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        hoverColor: ColoresApp.cyanPrimario.withOpacity(0.05),
-        splashColor: ColoresApp.cyanPrimario.withOpacity(0.1),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        hoverColor: colorIcono.withOpacity(0.05),
+        splashColor: colorIcono.withOpacity(0.1),
         dense: true,
       ),
     );
@@ -753,79 +1359,111 @@ class _PantallaHomeState extends State<PantallaHome> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        height: 140,
+        height: 160,
         decoration: BoxDecoration(
-          color: ColoresApp.tarjetaOscura.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withOpacity(0.5)),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              ColoresApp.tarjetaOscura.withOpacity(0.9),
+              ColoresApp.tarjetaOscura.withOpacity(0.7),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: color.withOpacity(0.6),
+            width: 2,
+          ),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.3),
+              color: Colors.black.withOpacity(0.3),
               blurRadius: 15,
               offset: const Offset(0, 5),
             ),
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
           ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.2),
-                shape: BoxShape.circle,
-                border: Border.all(color: color.withOpacity(0.5), width: 1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 3),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: onTap,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: color.withOpacity(0.6),
+                      width: 2,
+                    ),
                   ),
-                ],
-              ),
-              child: Icon(icono, size: 36, color: color),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              titulo,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.5,
-                shadows: [
-                  Shadow(
-                    color: Colors.black.withOpacity(0.5),
-                    offset: const Offset(0, 1),
-                    blurRadius: 2,
+                  child: Icon(icono, size: 40, color: color),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  titulo,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.7),
+                        offset: const Offset(0, 2),
+                        blurRadius: 4,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              textAlign: TextAlign.center,
+                  textAlign: TextAlign.center,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _botonEnlace(String titulo, IconData icono, Color color, String url) {
-    return ElevatedButton.icon(
-      onPressed: () => _abrirEnlace(url, titulo),
-      icon: Icon(icono, size: 20),
-      label: Text(titulo, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        elevation: 5,
-        shadowColor: color.withOpacity(0.5),
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            color,
+            color.withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.4),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ElevatedButton.icon(
+        onPressed: () => _abrirEnlace(url, titulo),
+        icon: Icon(icono, size: 18),
+        label: Text(
+          titulo,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.transparent,
+          shadowColor: Colors.transparent,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
       ),
     );
   }
@@ -849,6 +1487,8 @@ class _PantallaHomeState extends State<PantallaHome> {
           SnackBar(
             content: Text('Abriendo $nombre...'),
             backgroundColor: ColoresApp.exito,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             duration: const Duration(seconds: 2),
           ),
         );
@@ -868,6 +1508,8 @@ class _PantallaHomeState extends State<PantallaHome> {
               ],
             ),
             backgroundColor: ColoresApp.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             duration: const Duration(seconds: 4),
           ),
         );
@@ -880,12 +1522,48 @@ class _PantallaHomeState extends State<PantallaHome> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ColoresApp.tarjetaOscura,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: BorderSide(
+            color: ColoresApp.cyanPrimario.withOpacity(0.5),
+            width: 2,
+          ),
+        ),
         title: Row(
           children: [
-            Icon(Icons.help_center_rounded, color: ColoresApp.cyanPrimario),
-            const SizedBox(width: 10),
-            Text('Centro de Ayuda', style: TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.bold)),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ColoresApp.cyanPrimario.withOpacity(0.3),
+                    ColoresApp.azulPrimario.withOpacity(0.3),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: ColoresApp.cyanPrimario.withOpacity(0.5),
+                ),
+              ),
+              child: Icon(Icons.help_center_rounded, color: ColoresApp.cyanPrimario),
+            ),
+            const SizedBox(width: 16),
+            ShaderMask(
+              shaderCallback: (bounds) => LinearGradient(
+                colors: [
+                  ColoresApp.cyanPrimario,
+                  ColoresApp.azulPrimario,
+                ],
+              ).createShader(bounds),
+              child: Text(
+                'Centro de Ayuda',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+            ),
           ],
         ),
         content: SingleChildScrollView(
@@ -893,16 +1571,29 @@ class _PantallaHomeState extends State<PantallaHome> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Naboo Customs Controller v1.0', style: TextStyle(color: ColoresApp.textoPrimario, fontWeight: FontWeight.bold, fontSize: 16)),
+              Text(
+                'Naboo Customs Controller v1.0',
+                style: TextStyle(
+                  color: ColoresApp.textoPrimario,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
               const SizedBox(height: 12),
               Text(
                 'Esta aplicación te permite interactuar y controlar tus figuras customizadas de Naboo Customs equipadas con tecnología Arduino y Bluetooth.',
-                style: TextStyle(color: ColoresApp.textoSecundario, height: 1.4),
+                style: TextStyle(
+                  color: ColoresApp.textoSecundario,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 10),
               Text(
                 'Funcionalidades principales:',
-                style: TextStyle(color: ColoresApp.textoPrimario.withOpacity(0.8), fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: ColoresApp.textoPrimario.withOpacity(0.8),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
               const SizedBox(height: 4),
               Text(
@@ -911,26 +1602,52 @@ class _PantallaHomeState extends State<PantallaHome> {
                     '• Reproducción de efectos de sonido y música.\n'
                     '• Activación de efectos especiales (ej. humo).\n'
                     '• Gestión y visualización de tu colección de figuras.',
-                style: TextStyle(color: ColoresApp.textoSecundario, height: 1.4),
+                style: TextStyle(
+                  color: ColoresApp.textoSecundario,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 12),
               Text(
                 'Si encuentras algún problema o tienes sugerencias, no dudes en contactarnos a través de nuestras redes sociales.',
-                style: TextStyle(color: ColoresApp.textoSecundario.withOpacity(0.8), fontStyle: FontStyle.italic),
+                style: TextStyle(
+                  color: ColoresApp.textoSecundario.withOpacity(0.8),
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             ],
           ),
         ),
         actionsAlignment: MainAxisAlignment.center,
         actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(
-                backgroundColor: ColoresApp.cyanPrimario,
-                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
-                textStyle: const TextStyle(fontWeight: FontWeight.bold)
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  ColoresApp.cyanPrimario,
+                  ColoresApp.azulPrimario,
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: ColoresApp.cyanPrimario.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            child: const Text('Cerrar'),
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 12),
+                textStyle: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              child: const Text('Cerrar'),
+            ),
           ),
         ],
       ),

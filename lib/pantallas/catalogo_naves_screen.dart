@@ -4,7 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../nucleo/constantes/colores_app.dart';
 import '../servicios/firebase_service.dart';
 import '../modelos/figura.dart';
-import 'control_figura_screen.dart';
+import 'control_figura_screen.dart'; // <-- IMPORTACIÓN AÑADIDA
 
 class PantallaCatalogoNaves extends StatefulWidget {
   const PantallaCatalogoNaves({super.key});
@@ -316,7 +316,11 @@ class _PantallaCatalogoNavesState extends State<PantallaCatalogoNaves> {
   Widget _construirTarjetaNaveRedisenada(Figura nave) {
     return GestureDetector(
       onTap: () {
-        _mostrarProximamente(nave.nombre);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => PantallaControlFigura(figura: nave),
+          ),
+        );
       },
       child: Container(
         decoration: BoxDecoration(
@@ -715,60 +719,6 @@ class _PantallaCatalogoNavesState extends State<PantallaCatalogoNaves> {
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  void _mostrarProximamente(String nombreNave) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ColoresApp.tarjetaOscura,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: ColoresApp.azulPrimario.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.rocket_launch,
-              color: ColoresApp.azulPrimario,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                nombreNave,
-                style: const TextStyle(
-                  color: ColoresApp.textoPrimario,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: const Text(
-          'La pantalla de control para esta nave estará disponible próximamente.\n\n¡Prepárate para una experiencia de control futurista!',
-          style: TextStyle(
-            color: ColoresApp.textoSecundario,
-            fontSize: 14,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColoresApp.azulPrimario,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Entendido'),
-          ),
         ],
       ),
     );

@@ -316,7 +316,11 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
   Widget _construirTarjetaDioramaRedisenada(Figura diorama) {
     return GestureDetector(
       onTap: () {
-        _mostrarProximamente(diorama.nombre);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => PantallaControlFigura(figura: diorama),
+          ),
+        );
       },
       child: Container(
         decoration: BoxDecoration(
@@ -715,60 +719,6 @@ class _PantallaCatalogoDioramasState extends State<PantallaCatalogoDioramas> {
               ),
             ),
           ],
-        ],
-      ),
-    );
-  }
-
-  void _mostrarProximamente(String nombreDiorama) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ColoresApp.tarjetaOscura,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: ColoresApp.moradoPrimario.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        title: Row(
-          children: [
-            Icon(
-              Icons.terrain,
-              color: ColoresApp.moradoPrimario,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                nombreDiorama,
-                style: const TextStyle(
-                  color: ColoresApp.textoPrimario,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
-        content: const Text(
-          'La pantalla de control para este diorama estará disponible próximamente.\n\n¡Prepárate para explorar mundos épicos!',
-          style: TextStyle(
-            color: ColoresApp.textoSecundario,
-            fontSize: 14,
-            height: 1.4,
-          ),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ColoresApp.moradoPrimario,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Entendido'),
-          ),
         ],
       ),
     );

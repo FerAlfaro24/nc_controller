@@ -61,6 +61,9 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
 
   @override
   Widget build(BuildContext context) {
+    // Define el nuevo color base para este widget
+    final Color colorHumo = Colors.blueGrey[200]!; // <-- CAMBIO
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -69,17 +72,17 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
           end: Alignment.bottomRight,
           colors: [
             Colors.black.withOpacity(0.7),
-            ColoresApp.informacion.withOpacity(0.1),
+            colorHumo.withOpacity(0.1), // <-- CAMBIO
           ],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: ColoresApp.informacion.withOpacity(0.3),
+          color: colorHumo.withOpacity(0.3), // <-- CAMBIO
           width: 2,
         ),
         boxShadow: [
           BoxShadow(
-            color: ColoresApp.informacion.withOpacity(0.2),
+            color: colorHumo.withOpacity(0.2), // <-- CAMBIO
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -100,6 +103,8 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
   }
 
   Widget _buildHeader() {
+    final Color colorHumo = Colors.blueGrey[200]!; // <-- CAMBIO
+
     return Row(
       children: [
         AnimatedBuilder(
@@ -112,14 +117,14 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      ColoresApp.informacion.withOpacity(0.8),
-                      ColoresApp.azulPrimario.withOpacity(0.8),
+                      colorHumo.withOpacity(0.8),     // <-- CAMBIO
+                      Colors.blueGrey[600]!.withOpacity(0.8), // <-- CAMBIO
                     ],
                   ),
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: ColoresApp.informacion.withOpacity(0.5),
+                      color: colorHumo.withOpacity(0.5), // <-- CAMBIO
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -152,7 +157,7 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
               Text(
                 'GENERADOR DE HUMO',
                 style: TextStyle(
-                  color: ColoresApp.informacion,
+                  color: colorHumo, // <-- CAMBIO
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                 ),
@@ -201,6 +206,8 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
   }
 
   Widget _buildSmokeVisualization() {
+    final Color colorHumo = Colors.blueGrey[200]!; // <-- CAMBIO
+
     return Container(
       height: 150,
       decoration: BoxDecoration(
@@ -247,8 +254,8 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
                       gradient: RadialGradient(
                         colors: _smokeEnabled
                             ? [
-                          ColoresApp.informacion.withOpacity(0.8),
-                          ColoresApp.informacion.withOpacity(0.3),
+                          colorHumo.withOpacity(0.6), // <-- CAMBIO
+                          colorHumo.withOpacity(0.2), // <-- CAMBIO
                           Colors.transparent,
                         ]
                             : [
@@ -263,7 +270,7 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: _smokeEnabled
-                            ? ColoresApp.informacion.withOpacity(0.8)
+                            ? colorHumo.withOpacity(0.8) // <-- CAMBIO
                             : Colors.grey.withOpacity(0.5),
                         border: Border.all(
                           color: _smokeEnabled ? Colors.white : Colors.grey,
@@ -271,7 +278,7 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
                         ),
                       ),
                       child: Icon(
-                        Icons.cloud,
+                        Icons.cloud_queue, // <-- CAMBIO de Icono
                         color: Colors.white,
                         size: 24,
                       ),
@@ -300,15 +307,15 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
   }
 
   List<Widget> _buildSmokeParticles() {
-    return List.generate(8, (index) {
+    return List.generate(12, (index) { // <-- CAMBIO: Más partículas
       return AnimatedBuilder(
         animation: _smokeAnimation,
         builder: (context, child) {
-          final progress = (_smokeAnimation.value + (index * 0.125)) % 1.0;
-          final xOffset = 50 + (index * 20.0) + (progress * 30);
-          final yOffset = 150 - (progress * 120) - (index * 5);
-          final opacity = (1 - progress) * 0.7;
-          final size = 8.0 + (progress * 12);
+          final progress = (_smokeAnimation.value + (index * 0.083)) % 1.0;
+          final xOffset = 20 + (index * 25.0) + (progress * 20);
+          final yOffset = 150 - (progress * 130) - (index * 3);
+          final opacity = (1 - progress) * 0.6;
+          final size = 6.0 + (progress * 15);
 
           return Positioned(
             left: xOffset,
@@ -318,11 +325,11 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
               height: size,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: ColoresApp.informacion.withOpacity(opacity),
+                color: Colors.white.withOpacity(opacity), // <-- CAMBIO
                 boxShadow: [
                   BoxShadow(
-                    color: ColoresApp.informacion.withOpacity(opacity * 0.5),
-                    blurRadius: size * 0.5,
+                    color: Colors.white.withOpacity(opacity * 0.5), // <-- CAMBIO
+                    blurRadius: size, // <-- CAMBIO: Más desenfoque
                   ),
                 ],
               ),
@@ -352,8 +359,8 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
             label: const Text('ACTIVAR'),
             style: ElevatedButton.styleFrom(
               backgroundColor: _smokeEnabled
-                  ? ColoresApp.informacion.withOpacity(0.3)
-                  : ColoresApp.informacion,
+                  ? Colors.blueGrey[700]!.withOpacity(0.5) // <-- CAMBIO
+                  : Colors.blueGrey[600],                  // <-- CAMBIO
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
               shape: RoundedRectangleBorder(
@@ -394,6 +401,8 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
   }
 
   Widget _buildStatusInfo() {
+    final Color colorHumo = Colors.blueGrey[200]!; // <-- CAMBIO
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -410,14 +419,14 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
             children: [
               Icon(
                 Icons.info_outline,
-                color: ColoresApp.informacion,
+                color: colorHumo, // <-- CAMBIO
                 size: 16,
               ),
               const SizedBox(width: 8),
               Text(
                 'INFORMACIÓN DEL SISTEMA',
                 style: TextStyle(
-                  color: ColoresApp.informacion,
+                  color: colorHumo, // <-- CAMBIO
                   fontSize: 12,
                   fontWeight: FontWeight.bold,
                 ),
@@ -513,7 +522,7 @@ class _SmokeControlWidgetState extends State<SmokeControlWidget>
                   ),
                 ],
               ),
-              backgroundColor: enable ? ColoresApp.informacion : Colors.grey[700],
+              backgroundColor: enable ? Colors.blueGrey[700] : Colors.grey[700], // <-- CAMBIO
               duration: const Duration(seconds: 2),
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(

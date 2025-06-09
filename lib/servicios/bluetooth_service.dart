@@ -127,32 +127,40 @@ class BluetoothService {
     }
   }
 
-  /// Solicitar permisos de Bluetooth
+  /// Solicitar permisos de Bluetooth (MÉTODO CORREGIDO)
   Future<bool> _requestPermissions() async {
     try {
-      // Permisos para Android 12+
       if (Platform.isAndroid) {
-        final Map<Permission, PermissionStatus> statuses = await [
-          Permission.bluetooth,
+        // Solicitar todos los permisos necesarios a la vez.
+        Map<Permission, PermissionStatus> statuses = await [
           Permission.bluetoothScan,
           Permission.bluetoothConnect,
-          Permission.bluetoothAdvertise,
           Permission.location,
         ].request();
 
-        // Verificar que todos los permisos críticos estén concedidos
-        bool bluetoothGranted = statuses[Permission.bluetooth]?.isGranted ?? false;
-        bool locationGranted = statuses[Permission.location]?.isGranted ?? false;
+        // Verificar que los permisos críticos para la búsqueda y conexión fueron concedidos.
+        final scanGranted = statuses[Permission.bluetoothScan]?.isGranted ?? false;
+        final connectGranted = statuses[Permission.bluetoothConnect]?.isGranted ?? false;
+        final locationGranted = statuses[Permission.location]?.isGranted ?? false;
 
-        if (!bluetoothGranted || !locationGranted) {
-          print('❌ Permisos críticos denegados');
+        print('🔵 Verificación de Permisos:');
+        print('   - Búsqueda (Scan): ${scanGranted ? 'CONCEDIDO' : 'DENEGADO'}');
+        print('   - Conexión (Connect): ${connectGranted ? 'CONCEDIDO' : 'DENEGADO'}');
+        print('   - Ubicación (Location): ${locationGranted ? 'CONCEDIDO' : 'DENEGADO'}');
+
+        if (!scanGranted || !connectGranted) {
+          print('❌ Permisos de Bluetooth (Scan o Connect) denegados. No se puede continuar.');
+          return false;
+        }
+        if(!locationGranted) {
+          print('❌ Permiso de Ubicación denegado. Es necesario para buscar dispositivos.');
           return false;
         }
       }
-
+      // Para iOS, los permisos se manejan de forma diferente en el Info.plist
       return true;
     } catch (e) {
-      print('❌ Error solicitando permisos: $e');
+      print('❌ Error fatal solicitando permisos: $e');
       return false;
     }
   }
