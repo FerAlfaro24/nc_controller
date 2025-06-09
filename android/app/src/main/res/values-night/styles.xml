@@ -1,17 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="LaunchTheme" parent="@android:style/Theme.Black.NoTitleBar">
-        <!-- Fondo transparente -->
-        <item name="android:windowBackground">@android:color/transparent</item>
-        <!-- Para Android 12+ -->
-        <item name="android:windowSplashScreenBackground">@android:color/transparent</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@null</item>
-        <!-- Ocultar inmediatamente -->
-        <item name="android:windowIsTranslucent">true</item>
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <!-- CAMBIO CLAVE: Color sólido en lugar de transparente -->
+        <item name="android:windowBackground">#FF0F0F0F</item>
+
+        <!-- REMOVIDO: windowIsTranslucent (causaba el delay de 4 segundos) -->
+        <!-- <item name="android:windowIsTranslucent">true</item> -->
+
         <item name="android:windowNoTitle">true</item>
     </style>
 
-    <style name="NormalTheme" parent="@android:style/Theme.Black.NoTitleBar">
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 </resources>

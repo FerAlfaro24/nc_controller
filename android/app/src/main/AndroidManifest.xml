@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="com.naboocustoms.nccontroller">
 
-    <!-- Permisos básicos -->
+    <!-- MANTENER TODOS TUS PERMISOS COMO ESTÁN -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
@@ -28,7 +28,8 @@
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="true"
-        android:hardwareAccelerated="false">
+        android:hardwareAccelerated="true">
+        <!-- CAMBIO: Era false, ahora true para consistencia -->
 
         <activity
             android:name=".MainActivity"
@@ -40,16 +41,16 @@
             android:hardwareAccelerated="true"
             android:windowSoftInputMode="adjustResize">
 
-            <!-- META-DATA PARA DESACTIVAR SPLASH SCREEN -->
+            <!-- CAMBIO: Usar launch_background en lugar de transparente -->
             <meta-data
                 android:name="io.flutter.embedding.android.SplashScreenDrawable"
-                android:resource="@android:color/transparent" />
+                android:resource="@drawable/launch_background" />
 
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
                 android:resource="@style/NormalTheme" />
 
-            <!-- DESACTIVAR SPLASH SCREEN DE ANDROID 12+ -->
+            <!-- MANTENER: Configuración Android 12+ -->
             <meta-data
                 android:name="android.app.splashscreen.SplashScreenTheme"
                 android:resource="@style/LaunchTheme" />
@@ -65,7 +66,7 @@
             android:value="2" />
     </application>
 
-    <!-- Queries para Bluetooth y URLs -->
+    <!-- MANTENER TUS QUERIES COMO ESTÁN -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT"/>

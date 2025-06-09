@@ -19,15 +19,17 @@ void main() async {
   // Asegurar que Flutter esté inicializado
   WidgetsFlutterBinding.ensureInitialized();
 
-  try {
-    // Inicializar Firebase
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    print("✅ Firebase inicializado correctamente");
-  } catch (e) {
-    print("❌ Error inicializando Firebase: $e");
-  }
+  // 🚀 CAMBIO: NO inicializar Firebase aquí, lo hacemos después
+  // try {
+  //   await Firebase.initializeApp(
+  //     options: DefaultFirebaseOptions.currentPlatform,
+  //   );
+  //   print("✅ Firebase inicializado correctamente");
+  // } catch (e) {
+  //   print("❌ Error inicializando Firebase: $e");
+  // }
+
+  print("✅ Flutter inicializado - arrancando app inmediatamente");
 
   // IMPORTANTE: Usar runZonedGuarded para capturar errores async
   runZonedGuarded(
@@ -162,6 +164,9 @@ class _AppInitializerState extends State<AppInitializer>
   int _progress = 0;
   final int _totalSteps = 5;
 
+  // 🆕 NUEVO: Flag para controlar Firebase
+  bool _firebaseInitialized = false;
+
   // Controladores de animación
   late AnimationController _pulseController;
   late AnimationController _rotationController;
@@ -177,7 +182,12 @@ class _AppInitializerState extends State<AppInitializer>
   void initState() {
     super.initState();
     _initializeAnimations();
-    _initializeApp();
+    // 🚀 CAMBIO: Pequeño delay para que UI se renderice primero
+    Future.delayed(const Duration(milliseconds: 200), () {
+      if (mounted) {
+        _initializeApp();
+      }
+    });
   }
 
   void _initializeAnimations() {
@@ -249,41 +259,55 @@ class _AppInitializerState extends State<AppInitializer>
         _progress = 0;
       });
 
-      // Pequeña pausa para asegurar que Flutter esté completamente listo
-      await Future.delayed(const Duration(milliseconds: 800));
+      // 🔥 CAMBIO: Inicializar Firebase AQUÍ (después de mostrar UI)
+      if (!_firebaseInitialized) {
+        setState(() {
+          _initStatus = 'Inicializando Firebase...';
+          _progress = 1;
+        });
+        print("🔥 Inicializando Firebase...");
 
-      // Paso 1: Inicializar AuthService
+        await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform,
+        );
+        _firebaseInitialized = true;
+        print("✅ Firebase inicializado correctamente");
+
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+
+      // Paso 2: Inicializar AuthService
       setState(() {
         _initStatus = 'Inicializando sistema de autenticación...';
-        _progress = 1;
+        _progress = 2;
       });
       print("🔧 Inicializando AuthService...");
       final authService = AuthService();
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Paso 2: Inicializar FirebaseService
+      // Paso 3: Inicializar FirebaseService
       setState(() {
         _initStatus = 'Conectando con Firebase...';
-        _progress = 2;
+        _progress = 3;
       });
       print("🔧 Inicializando FirebaseService...");
       final firebaseService = FirebaseService();
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Paso 3: Inicializar CloudinaryService
+      // Paso 4: Inicializar CloudinaryService
       setState(() {
         _initStatus = 'Configurando servicio de imágenes...';
-        _progress = 3;
+        _progress = 4;
       });
       print("🔧 Inicializando CloudinaryService...");
       final cloudinaryService = CloudinaryService();
       cloudinaryService.inicializar();
       await Future.delayed(const Duration(milliseconds: 500));
 
-      // Paso 4: Verificar conexiones
+      // Paso 5: Verificar conexiones
       setState(() {
         _initStatus = 'Verificando conexiones...';
-        _progress = 4;
+        _progress = 5;
       });
 
       // Verificar que los servicios funcionen
@@ -293,13 +317,6 @@ class _AppInitializerState extends State<AppInitializer>
       if (!connectionOk) {
         throw Exception('No se pudo conectar a Firebase');
       }
-
-      // Paso 5: Finalización
-      setState(() {
-        _initStatus = 'Finalizando configuración...';
-        _progress = 5;
-      });
-      await Future.delayed(const Duration(milliseconds: 500));
 
       setState(() => _initStatus = '¡Sistema listo para usar!');
       await Future.delayed(const Duration(milliseconds: 800));
@@ -758,9 +775,9 @@ class _AppInitializerState extends State<AppInitializer>
 
   Widget _buildServicesGrid() {
     final services = [
-      {'name': 'FIREBASE', 'icon': Icons.cloud, 'active': _progress >= 2},
-      {'name': 'AUTH', 'icon': Icons.security, 'active': _progress >= 1},
-      {'name': 'STORAGE', 'icon': Icons.storage, 'active': _progress >= 3},
+      {'name': 'FIREBASE', 'icon': Icons.cloud, 'active': _progress >= 1},
+      {'name': 'AUTH', 'icon': Icons.security, 'active': _progress >= 2},
+      {'name': 'STORAGE', 'icon': Icons.storage, 'active': _progress >= 4},
       {'name': 'SISTEMA', 'icon': Icons.check_circle, 'active': _progress >= 5},
     ];
 
