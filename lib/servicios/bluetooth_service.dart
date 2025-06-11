@@ -14,6 +14,7 @@ enum BluetoothConnectionState {
 enum BluetoothDeviceType {
   classic, // HC-05, HC-06
   ble,     // Bluetooth Low Energy
+  unknown, // Para dispositivos que no sabemos el tipo
 }
 
 class BluetoothDevice {
@@ -22,6 +23,7 @@ class BluetoothDevice {
   final BluetoothDeviceType type;
   final int? rssi;
   final bool isConnected;
+  final bool isPaired; // Para saber si está emparejado
 
   BluetoothDevice({
     required this.name,
@@ -29,10 +31,17 @@ class BluetoothDevice {
     required this.type,
     this.rssi,
     this.isConnected = false,
+    this.isPaired = false,
   });
 
+  // Método para detectar si es HC-05/HC-06
+  bool get isHcModule => name.toLowerCase().contains('hc-') ||
+      name.toLowerCase().contains('bt-') ||
+      address.startsWith('98:D3') || // Común en HC-05 clones
+      address.startsWith('00:14:03'); // Otro MAC común
+
   @override
-  String toString() => 'BluetoothDevice(name: $name, address: $address, type: $type)';
+  String toString() => 'BluetoothDevice(name: $name, address: $address, type: $type, paired: $isPaired)';
 }
 
 // Comandos para controlar las figuras
@@ -89,6 +98,9 @@ class BluetoothService {
   BluetoothDevice? _connectedDevice;
   List<BluetoothDevice> _discoveredDevices = [];
 
+  // 🆕 NUEVO: Para pasar el nombre del dispositivo objetivo
+  String? _targetDeviceName;
+
   // Getters para streams
   Stream<BluetoothConnectionState> get connectionState => _connectionStateController.stream;
   Stream<List<BluetoothDevice>> get discoveredDevices => _devicesController.stream;
@@ -98,6 +110,12 @@ class BluetoothService {
   BluetoothConnectionState get currentState => _currentState;
   BluetoothDevice? get connectedDevice => _connectedDevice;
   bool get isConnected => _currentState == BluetoothConnectionState.connected;
+
+  /// 🆕 NUEVO: Configurar el nombre del dispositivo objetivo
+  void setTargetDeviceName(String targetName) {
+    _targetDeviceName = targetName;
+    print('🎯 Nombre del dispositivo objetivo configurado: $_targetDeviceName');
+  }
 
   /// Inicializar el servicio de Bluetooth
   Future<bool> initialize() async {
@@ -127,7 +145,7 @@ class BluetoothService {
     }
   }
 
-  /// Solicitar permisos de Bluetooth (MÉTODO CORREGIDO)
+  /// Solicitar permisos de Bluetooth
   Future<bool> _requestPermissions() async {
     try {
       if (Platform.isAndroid) {
@@ -157,7 +175,6 @@ class BluetoothService {
           return false;
         }
       }
-      // Para iOS, los permisos se manejan de forma diferente en el Info.plist
       return true;
     } catch (e) {
       print('❌ Error fatal solicitando permisos: $e');
@@ -185,12 +202,46 @@ class BluetoothService {
     }
   }
 
+  /// Obtener dispositivos emparejados
+  Future<List<BluetoothDevice>> getPairedDevices() async {
+    try {
+      print('📱 Obteniendo dispositivos emparejados...');
+      final result = await _methodChannel.invokeMethod('getPairedDevices');
+
+      if (result != null && result is List) {
+        List<BluetoothDevice> pairedDevices = [];
+
+        for (var deviceData in result) {
+          final device = BluetoothDevice(
+            name: deviceData['name'] ?? 'Dispositivo desconocido',
+            address: deviceData['address'] ?? '',
+            type: BluetoothDeviceType.classic, // Los emparejados suelen ser clásicos
+            isPaired: true,
+          );
+          pairedDevices.add(device);
+          print('📱 Dispositivo emparejado: ${device.name} (${device.address})');
+        }
+
+        return pairedDevices;
+      }
+
+      return [];
+    } catch (e) {
+      print('❌ Error obteniendo dispositivos emparejados: $e');
+      return [];
+    }
+  }
+
   /// Escanear dispositivos Bluetooth
   Future<bool> startDiscovery({BluetoothDeviceType? deviceType}) async {
     try {
       print('🔍 Iniciando búsqueda de dispositivos...');
       _discoveredDevices.clear();
-      _devicesController.add(_discoveredDevices);
+
+      // Primero obtener dispositivos emparejados
+      final pairedDevices = await getPairedDevices();
+      _discoveredDevices.addAll(pairedDevices);
+      _devicesController.add(List.from(_discoveredDevices));
 
       final success = await _methodChannel.invokeMethod('startDiscovery', {
         'deviceType': deviceType?.toString() ?? 'both',
@@ -213,18 +264,22 @@ class BluetoothService {
     }
   }
 
-  /// Conectar a un dispositivo
+  /// 🚀 CONEXIÓN MEJORADA que usa la misma lógica que el cartel "COMPATIBLE"
   Future<bool> connectToDevice(BluetoothDevice device) async {
     try {
       print('🔗 Conectando a ${device.name} (${device.address})...');
       _updateConnectionState(BluetoothConnectionState.connecting);
 
-      final success = await _methodChannel.invokeMethod('connectToDevice', {
-        'address': device.address,
-        'type': device.type.toString(),
-      });
+      // 🆕 DETERMINAR si es dispositivo compatible (mismo criterio que el cartel verde)
+      bool isTargetDevice = false;
+      if (_targetDeviceName != null && _targetDeviceName!.isNotEmpty) {
+        isTargetDevice = device.name.toLowerCase().contains(_targetDeviceName!.toLowerCase());
+        print('🎯 Dispositivo objetivo: ${isTargetDevice ? 'SÍ' : 'NO'} (buscando: $_targetDeviceName en: ${device.name})');
+      }
 
-      if (success == true) {
+      final success = await _connectWithType(device, device.type, isTargetDevice);
+
+      if (success) {
         _connectedDevice = device;
         _updateConnectionState(BluetoothConnectionState.connected);
         print('✅ Conectado a ${device.name}');
@@ -237,10 +292,26 @@ class BluetoothService {
         print('❌ Falló la conexión a ${device.name}');
       }
 
-      return success ?? false;
+      return success;
     } catch (e) {
       print('❌ Error conectando: $e');
       _updateConnectionState(BluetoothConnectionState.error);
+      return false;
+    }
+  }
+
+  /// 🆕 Conectar con información de si es dispositivo objetivo
+  Future<bool> _connectWithType(BluetoothDevice device, BluetoothDeviceType type, bool isTargetDevice) async {
+    try {
+      final success = await _methodChannel.invokeMethod('connectToDevice', {
+        'address': device.address,
+        'type': type.toString().split('.').last,
+        'targetDeviceName': isTargetDevice ? _targetDeviceName : null, // 🆕 NUEVO parámetro
+      });
+
+      return success ?? false;
+    } catch (e) {
+      print('❌ Error conectando con tipo $type: $e');
       return false;
     }
   }
@@ -275,14 +346,20 @@ class BluetoothService {
     try {
       print('📤 Enviando comando: $command');
 
+      // Para HC-05, agregar terminador de línea si no lo tiene
+      String commandToSend = command;
+      if (_connectedDevice?.isHcModule == true && !command.endsWith('\n')) {
+        commandToSend = '$command\n';
+      }
+
       final success = await _methodChannel.invokeMethod('sendData', {
-        'data': command,
+        'data': commandToSend,
       });
 
       if (success == true) {
-        print('✅ Comando enviado: $command');
+        print('✅ Comando enviado: $commandToSend');
       } else {
-        print('❌ Error enviando comando: $command');
+        print('❌ Error enviando comando: $commandToSend');
       }
 
       return success ?? false;
@@ -303,6 +380,15 @@ class BluetoothService {
       // LEDs adicionales usan formato extendido
       return await sendCommand(ComandosBluetooth.ledComando(numeroLed, encender));
     }
+  }
+
+  // 🆕 MÉTODOS PARA CONTROLAR TODOS LOS LEDs
+  Future<bool> encenderTodosLEDs() async {
+    return await sendCommand("ALLON");
+  }
+
+  Future<bool> apagarTodosLEDs() async {
+    return await sendCommand("ALLOFF");
   }
 
   // Control de música
@@ -364,13 +450,21 @@ class BluetoothService {
         address: deviceData['address'] ?? '',
         type: deviceData['type'] == 'ble' ? BluetoothDeviceType.ble : BluetoothDeviceType.classic,
         rssi: deviceData['rssi'],
+        isPaired: deviceData['isPaired'] ?? false,
       );
 
       // Evitar duplicados
       if (!_discoveredDevices.any((d) => d.address == device.address)) {
         _discoveredDevices.add(device);
         _devicesController.add(List.from(_discoveredDevices));
-        print('📱 Dispositivo encontrado: ${device.name}');
+
+        // 🆕 MOSTRAR si es dispositivo compatible
+        bool isTarget = false;
+        if (_targetDeviceName != null && _targetDeviceName!.isNotEmpty) {
+          isTarget = device.name.toLowerCase().contains(_targetDeviceName!.toLowerCase());
+        }
+
+        print('📱 Dispositivo encontrado: ${device.name} ${isTarget ? '(COMPATIBLE)' : ''}');
       }
     } catch (e) {
       print('❌ Error procesando dispositivo encontrado: $e');

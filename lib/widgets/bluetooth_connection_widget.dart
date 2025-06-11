@@ -447,6 +447,7 @@ class _BluetoothConnectionWidgetState extends State<BluetoothConnectionWidget>
             ),
           ),
           const SizedBox(height: 2),
+          // 🚀 SECCIÓN ARREGLADA - Sin overflow
           Row(
             children: [
               Container(
@@ -468,7 +469,26 @@ class _BluetoothConnectionWidgetState extends State<BluetoothConnectionWidget>
                   ),
                 ),
               ),
-              if (device.rssi != null) ...[
+              // 🚀 LÓGICA MEJORADA: Si es compatible, NO mostrar dBm
+              if (isTargetDevice) ...[
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: ColoresApp.verdeAcento.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                  child: Text(
+                    'COMPATIBLE',
+                    style: TextStyle(
+                      color: ColoresApp.verdeAcento,
+                      fontSize: 6,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ] else if (device.rssi != null) ...[
+                // 🆕 Solo mostrar dBm si NO es compatible
                 const SizedBox(width: 8),
                 Icon(
                   _getSignalIcon(device.rssi!),
@@ -480,25 +500,7 @@ class _BluetoothConnectionWidgetState extends State<BluetoothConnectionWidget>
                   '${device.rssi} dBm',
                   style: TextStyle(
                     color: Colors.white.withOpacity(0.5),
-                    fontSize: 9,
-                  ),
-                ),
-              ],
-              if (isTargetDevice) ...[
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                  decoration: BoxDecoration(
-                    color: ColoresApp.verdeAcento.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: Text(
-                    'COMPATIBLE',
-                    style: TextStyle(
-                      color: ColoresApp.verdeAcento,
-                      fontSize: 8,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    fontSize: 8,
                   ),
                 ),
               ],

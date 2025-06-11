@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_bluetooth_serial/flutter_bluetooth_serial.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'firebase_options.dart';
 import 'nucleo/tema/tema_app.dart';
 import 'servicios/auth_service.dart';
@@ -18,6 +21,12 @@ void main() async {
 
   // Asegurar que Flutter esté inicializado
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 🔒 NUEVO: Fijar orientación solo en vertical
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+  ]);
 
   // 🚀 CAMBIO: NO inicializar Firebase aquí, lo hacemos después
   // try {
@@ -183,11 +192,107 @@ class _AppInitializerState extends State<AppInitializer>
     super.initState();
     _initializeAnimations();
     // 🚀 CAMBIO: Pequeño delay para que UI se renderice primero
-    Future.delayed(const Duration(milliseconds: 200), () {
+    Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
-        _initializeApp();
+        _checkBluetoothAndInitialize();
       }
     });
+  }
+
+  // 🆕 NUEVA función para verificar Bluetooth antes de inicializar
+  Future<void> _checkBluetoothAndInitialize() async {
+    try {
+      // Solicitar permisos de Bluetooth
+      await [
+        Permission.bluetooth,
+        Permission.bluetoothConnect,
+        Permission.bluetoothScan,
+        Permission.location,
+      ].request();
+
+      // Verificar si Bluetooth está habilitado
+      bool? isEnabled = await FlutterBluetoothSerial.instance.isEnabled;
+
+      if (isEnabled != true) {
+        // Mostrar diálogo para activar Bluetooth
+        bool? shouldEnable = await _showBluetoothDialog();
+
+        if (shouldEnable == true) {
+          await FlutterBluetoothSerial.instance.requestEnable();
+        }
+      }
+
+      // Continuar con la inicialización normal
+      _initializeApp();
+
+    } catch (e) {
+      print("⚠️ Error con Bluetooth: $e");
+      // Continuar aunque haya error con Bluetooth
+      _initializeApp();
+    }
+  }
+
+  // 🆕 NUEVO diálogo simple para activar Bluetooth
+  Future<bool?> _showBluetoothDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF0F0F0F),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: BorderSide(
+              color: const Color(0xFF00D4FF).withOpacity(0.3),
+            ),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.bluetooth,
+                color: const Color(0xFF00D4FF),
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'Activar Bluetooth',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: const Text(
+            'Para usar NC Controller necesitas activar el Bluetooth. ¿Deseas activarlo ahora?',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 14,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text(
+                'Omitir',
+                style: TextStyle(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF00D4FF),
+              ),
+              child: const Text(
+                'Activar',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _initializeAnimations() {
@@ -273,7 +378,7 @@ class _AppInitializerState extends State<AppInitializer>
         _firebaseInitialized = true;
         print("✅ Firebase inicializado correctamente");
 
-        await Future.delayed(const Duration(milliseconds: 500));
+        await Future.delayed(const Duration(milliseconds: 300));
       }
 
       // Paso 2: Inicializar AuthService
@@ -283,7 +388,7 @@ class _AppInitializerState extends State<AppInitializer>
       });
       print("🔧 Inicializando AuthService...");
       final authService = AuthService();
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 300));
 
       // Paso 3: Inicializar FirebaseService
       setState(() {
@@ -292,7 +397,7 @@ class _AppInitializerState extends State<AppInitializer>
       });
       print("🔧 Inicializando FirebaseService...");
       final firebaseService = FirebaseService();
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 300));
 
       // Paso 4: Inicializar CloudinaryService
       setState(() {
@@ -302,7 +407,7 @@ class _AppInitializerState extends State<AppInitializer>
       print("🔧 Inicializando CloudinaryService...");
       final cloudinaryService = CloudinaryService();
       cloudinaryService.inicializar();
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 300));
 
       // Paso 5: Verificar conexiones
       setState(() {
@@ -319,7 +424,7 @@ class _AppInitializerState extends State<AppInitializer>
       }
 
       setState(() => _initStatus = '¡Sistema listo para usar!');
-      await Future.delayed(const Duration(milliseconds: 800));
+      await Future.delayed(const Duration(milliseconds: 500));
 
       if (mounted) {
         setState(() => _isInitialized = true);

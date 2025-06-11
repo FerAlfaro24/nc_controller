@@ -363,23 +363,18 @@ class _PantallaHomeState extends State<PantallaHome>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Marquee animado (movido arriba del logo)
+                      // Marquee animado
                       FadeTransition(
                         opacity: _fadeAnimation,
                         child: StreamBuilder<ConfiguracionApp>(
                           stream: _firebaseService.obtenerConfiguracion(),
                           builder: (context, snapshot) {
-                            print('🏠 StreamBuilder marquee - ConnectionState: ${snapshot.connectionState}, HasData: ${snapshot.hasData}, HasError: ${snapshot.hasError}');
-                            if (snapshot.hasError) {
-                              print('   Error en Stream Marquee: ${snapshot.error}');
-                            }
                             String textoMarquee = '¡Bienvenido a Naboo Customs! 🚀';
                             if (snapshot.hasData) {
                               final configuracion = snapshot.data!;
                               if (configuracion.textoMarquee.isNotEmpty) {
                                 textoMarquee = configuracion.textoMarquee;
                               }
-                              print('🎨 Texto marquee actualizado: "$textoMarquee"');
                             } else if (snapshot.connectionState == ConnectionState.waiting) {
                               textoMarquee = 'Cargando noticias...';
                             } else if (snapshot.hasError) {
@@ -436,13 +431,12 @@ class _PantallaHomeState extends State<PantallaHome>
                           },
                         ),
                       ),
-
                       const SizedBox(height: 20),
                     ],
                   ),
                 ),
 
-                // Logo animado (limpio y más grande)
+                // Logo animado
                 FadeTransition(
                   opacity: _logoOpacityAnimation,
                   child: AnimatedBuilder(
@@ -556,7 +550,7 @@ class _PantallaHomeState extends State<PantallaHome>
 
                       const SizedBox(height: 32),
 
-                      // Tarjetas de navegación animadas
+                      // Tarjetas de navegación FUTURISTAS
                       SlideTransition(
                         position: _cardsSlideAnimation,
                         child: FadeTransition(
@@ -564,19 +558,21 @@ class _PantallaHomeState extends State<PantallaHome>
                           child: Row(
                             children: [
                               Expanded(
-                                child: _tarjetaNavegacion(
+                                child: _tarjetaNavegacionFuturista(
                                   'NAVES',
-                                  Icons.rocket,
+                                  Icons.rocket_launch,
                                   ColoresApp.azulPrimario,
+                                  ColoresApp.cyanPrimario,
                                   _navegarANaves,
                                 ),
                               ),
                               const SizedBox(width: 16),
                               Expanded(
-                                child: _tarjetaNavegacion(
+                                child: _tarjetaNavegacionFuturista(
                                   'DIORAMAS',
                                   Icons.landscape,
                                   ColoresApp.moradoPrimario,
+                                  const Color(0xFF9C27B0),
                                   _navegarADioramas,
                                 ),
                               ),
@@ -587,7 +583,7 @@ class _PantallaHomeState extends State<PantallaHome>
 
                       const SizedBox(height: 32),
 
-                      // Enlaces rápidos mejorados
+                      // Enlaces SIMPLIFICADOS
                       SlideTransition(
                         position: _cardsSlideAnimation,
                         child: FadeTransition(
@@ -595,113 +591,53 @@ class _PantallaHomeState extends State<PantallaHome>
                           child: Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  ColoresApp.tarjetaOscura.withOpacity(0.9),
-                                  ColoresApp.tarjetaOscura.withOpacity(0.7),
-                                ],
-                              ),
+                              color: Colors.black.withOpacity(0.4),
                               borderRadius: BorderRadius.circular(20),
                               border: Border.all(
-                                color: ColoresApp.verdeAcento.withOpacity(0.4),
-                                width: 2,
+                                color: ColoresApp.verdeAcento.withOpacity(0.3),
+                                width: 1,
                               ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: ColoresApp.verdeAcento.withOpacity(0.2),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 8),
-                                ),
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.3),
-                                  blurRadius: 15,
-                                  offset: const Offset(0, 5),
-                                ),
-                              ],
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            ColoresApp.verdeAcento.withOpacity(0.3),
-                                            ColoresApp.verdeAcento.withOpacity(0.1),
-                                          ],
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(
-                                          color: ColoresApp.verdeAcento.withOpacity(0.5),
-                                        ),
-                                      ),
-                                      child: const Icon(
-                                        Icons.link,
-                                        color: ColoresApp.verdeAcento,
-                                        size: 24,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    ShaderMask(
-                                      shaderCallback: (bounds) => LinearGradient(
-                                        colors: [
-                                          ColoresApp.verdeAcento,
-                                          ColoresApp.cyanPrimario,
-                                        ],
-                                      ).createShader(bounds),
-                                      child: Text(
-                                        'ENLACES',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 1,
-                                          shadows: [
-                                            Shadow(
-                                              color: Colors.black.withOpacity(0.5),
-                                              offset: const Offset(0, 1),
-                                              blurRadius: 2,
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                    ),
-                                  ],
+                                Text(
+                                  'ENLACES',
+                                  style: TextStyle(
+                                    color: ColoresApp.verdeAcento,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1,
+                                  ),
                                 ),
-                                const SizedBox(height: 20),
+                                const SizedBox(height: 16),
                                 Row(
                                   children: [
                                     Expanded(
-                                      child: _botonEnlace(
-                                        'Instagram',
+                                      child: _botonEnlaceSimple(
+                                        'Insta',
                                         Icons.camera_alt,
-                                        ColoresApp.rosaAcento,
+                                        const Color(0xFFE1306C),
                                         'https://www.instagram.com/naboo.customs/',
                                       ),
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
-                                      child: _botonEnlace(
-                                        'Facebook',
+                                      child: _botonEnlaceSimple(
+                                        'Face',
                                         Icons.facebook,
-                                        ColoresApp.azulPrimario,
+                                        const Color(0xFF1877F2),
                                         'https://www.facebook.com/Nabbo.customs/',
                                       ),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: _botonEnlace(
-                                    'Catálogo en Drive',
-                                    Icons.folder_open,
-                                    ColoresApp.naranjaAcento,
-                                    'https://drive.google.com/drive/folders/1bzZ8g6QDotavLFLg9h5puTd4bvqoBCQL',
-                                  ),
+                                _botonEnlaceSimple(
+                                  'Catálogo Drive',
+                                  Icons.folder_open,
+                                  ColoresApp.naranjaAcento,
+                                  'https://drive.google.com/drive/folders/1bzZ8g6QDotavLFLg9h5puTd4bvqoBCQL',
                                 ),
                               ],
                             ),
@@ -711,7 +647,7 @@ class _PantallaHomeState extends State<PantallaHome>
 
                       const SizedBox(height: 24),
 
-                      // Instagram feed mejorado
+                      // Instagram feed
                       SlideTransition(
                         position: _cardsSlideAnimation,
                         child: FadeTransition(
@@ -774,29 +710,13 @@ class _PantallaHomeState extends State<PantallaHome>
                                       ),
                                     ),
                                     const SizedBox(width: 16),
-                                    ShaderMask(
-                                      shaderCallback: (bounds) => const LinearGradient(
-                                        colors: [
-                                          Color(0xFF833AB4),
-                                          Color(0xFFE1306C),
-                                          Color(0xFFFCAF45),
-                                        ],
-                                      ).createShader(bounds),
-                                      child: Text(
-                                        'SÍGUENOS',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w700,
-                                          letterSpacing: 0.8,
-                                          shadows: [
-                                            Shadow(
-                                              color: Colors.black.withOpacity(0.5),
-                                              offset: const Offset(0, 1),
-                                              blurRadius: 2,
-                                            ),
-                                          ],
-                                        ),
+                                    Text(
+                                      'SÍGUENOS',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.8,
                                       ),
                                     ),
                                   ],
@@ -811,6 +731,154 @@ class _PantallaHomeState extends State<PantallaHome>
 
                       const SizedBox(height: 100),
                     ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // TARJETAS FUTURISTAS
+  Widget _tarjetaNavegacionFuturista(String titulo, IconData icono, Color colorPrimario, Color colorSecundario, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 150,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [colorPrimario, colorSecundario],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: colorPrimario.withOpacity(0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
+              spreadRadius: 2,
+            ),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(20),
+            onTap: onTap,
+            splashColor: Colors.white.withOpacity(0.2),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.white.withOpacity(0.1),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withOpacity(0.2),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      icono,
+                      size: 32,
+                      color: Colors.white,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    titulo,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                      shadows: [
+                        Shadow(
+                          color: Colors.black,
+                          offset: Offset(0, 1),
+                          blurRadius: 3,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // BOTONES DE ENLACE SIMPLES
+  Widget _botonEnlaceSimple(String titulo, IconData icono, Color color, String url) {
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _abrirEnlace(url, titulo),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  icono,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    titulo,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -1351,119 +1419,6 @@ class _PantallaHomeState extends State<PantallaHome>
         hoverColor: colorIcono.withOpacity(0.05),
         splashColor: colorIcono.withOpacity(0.1),
         dense: true,
-      ),
-    );
-  }
-
-  Widget _tarjetaNavegacion(String titulo, IconData icono, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 160,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              ColoresApp.tarjetaOscura.withOpacity(0.9),
-              ColoresApp.tarjetaOscura.withOpacity(0.7),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: color.withOpacity(0.6),
-            width: 2,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(20),
-            onTap: onTap,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: color.withOpacity(0.6),
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(icono, size: 40, color: color),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  titulo,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.7),
-                        offset: const Offset(0, 2),
-                        blurRadius: 4,
-                      ),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _botonEnlace(String titulo, IconData icono, Color color, String url) {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            color,
-            color.withOpacity(0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: color.withOpacity(0.4),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: ElevatedButton.icon(
-        onPressed: () => _abrirEnlace(url, titulo),
-        icon: Icon(icono, size: 18),
-        label: Text(
-          titulo,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
-          ),
-        ),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.transparent,
-          shadowColor: Colors.transparent,
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
       ),
     );
   }

@@ -246,7 +246,7 @@ class _PantallaLoginState extends State<PantallaLogin>
                 children: [
                   const Icon(Icons.check_circle, color: Colors.white, size: 20),
                   const SizedBox(width: 8),
-                  Text('¡Bienvenido, ${resultado.usuario!.nombre}!'),
+                  Text('¡Bienvenido USUARIO :3!'),
                 ],
               ),
               backgroundColor: ColoresApp.exito,

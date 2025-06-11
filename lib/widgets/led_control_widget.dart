@@ -184,7 +184,7 @@ class _LEDControlWidgetState extends State<LEDControlWidget>
         crossAxisCount: widget.ledConfig.cantidad <= 2 ? 2 : 3,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.0,
+        childAspectRatio: 0.9, // 🚀 CAMBIO: De 1.0 a 0.9 (más alto)
       ),
       itemCount: widget.ledConfig.cantidad,
       itemBuilder: (context, index) {
@@ -403,20 +403,18 @@ class _LEDControlWidgetState extends State<LEDControlWidget>
     }
   }
 
+  // 🚀 MÉTODO ARREGLADO - Usa los nuevos métodos del BluetoothService
   Future<void> _toggleAllLEDs(bool turnOn) async {
-    List<Future<bool>> futures = [];
-
-    for (int i = 0; i < widget.ledConfig.cantidad; i++) {
-      if (_ledStates[i] != turnOn) {
-        futures.add(widget.bluetoothService.controlarLED(i + 1, turnOn));
-      }
-    }
-
     try {
-      final results = await Future.wait(futures);
-      final allSuccess = results.every((result) => result);
+      bool success;
 
-      if (allSuccess) {
+      if (turnOn) {
+        success = await widget.bluetoothService.encenderTodosLEDs();
+      } else {
+        success = await widget.bluetoothService.apagarTodosLEDs();
+      }
+
+      if (success) {
         setState(() {
           for (int i = 0; i < widget.ledConfig.cantidad; i++) {
             _ledStates[i] = turnOn;
@@ -441,8 +439,8 @@ class _LEDControlWidgetState extends State<LEDControlWidget>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error controlando algunos LEDs'),
-              backgroundColor: ColoresApp.advertencia,
+              content: Text('Error controlando todos los LEDs'),
+              backgroundColor: ColoresApp.error,
               duration: const Duration(seconds: 2),
             ),
           );
